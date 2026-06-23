@@ -1,0 +1,23 @@
+[
+  {
+    "session_id": "trigger_1782186240",
+    "timestamp": "2026-06-23 03:44:00",
+    "ticker": "SOLUSDT",
+    "quant_trigger": {
+      "direction": "BUY_SIGNAL",
+      "indicator_setup": "RSI + MACD + Bollinger Confluence",
+      "timeframe": "1m",
+      "price_at_trigger": 71.8
+    },
+    "market_metrics": {
+      "rsi_14": 25.63,
+      "macd_line": -0.0261,
+      "macd_signal": -0.028,
+      "volume_spike": true,
+      "recent_volume": 37.76
+    },
+    "consensus": {
+      "status": "AWAITING_AGENT_EVALUATION"
+    }
+  }
+]
