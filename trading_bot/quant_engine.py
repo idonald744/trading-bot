@@ -14,10 +14,10 @@ load_dotenv()
 # CONFIGURATION
 # ==========================================
 SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
-TIMEFRAME = '1m'
+TIMEFRAME = '15m'
 MAX_CANDLES = 100
-RSI_OVERSOLD = 35
-RSI_OVERBOUGHT = 65
+RSI_OVERSOLD = 30
+RSI_OVERBOUGHT = 70
 
 print(f"[*] Initializing Quant Engine for {SYMBOLS}...")
 
