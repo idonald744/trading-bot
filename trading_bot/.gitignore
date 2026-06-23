@@ -1,0 +1,4 @@
+trading_bot/books/
+trading_bot/venv/
+trading_bot/.env
+trading_bot/logs/
