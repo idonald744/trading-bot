@@ -159,5 +159,72 @@
       "confidence": "high",
       "headlines_analyzed": 20
     }
+  },
+  {
+    "session_id": "test_001",
+    "timestamp": "2026-06-24 01:00:00",
+    "ticker": "SOLUSDT",
+    "quant_trigger": {
+      "direction": "BUY_SIGNAL",
+      "indicator_setup": "RSI + MACD + Bollinger Confluence",
+      "timeframe": "15m",
+      "price_at_trigger": 69.58
+    },
+    "market_metrics": {
+      "rsi_14": 28.5,
+      "macd_line": 0.2196,
+      "macd_signal": 0.2104,
+      "volume_spike": true,
+      "recent_volume": 74.71
+    },
+    "consensus": {
+      "status": "AWAITING_AGENT_EVALUATION"
+    },
+    "sentiment": {
+      "sentiment_score": 6,
+      "smart_money_signal": "neutral",
+      "retail_signal": "neutral",
+      "key_narratives": [
+        "Payments Firm MoneyGram Joins Solana (SOL) Network As Active Validator",
+        "Pump.fun GO Bounty Feature Draws Backlash Over Risky Crypto Tasks",
+        "MoneyGram becomes Solana validator, expands blockchain payments strategy"
+      ],
+      "trap_warning": false,
+      "trap_reason": null,
+      "confidence": "high",
+      "headlines_analyzed": 20
+    },
+    "rag_validation": {
+      "validated": true,
+      "methodology": "in the opposite direction, breaking a previous high or low, then a diver\u00ac gence or failure swing is confirmed. The 50 level is the RSI midpoint value, and will often act as support during pullbacks and resistance during bounces. Some traders treat RSI crossings above and below the 50 level as buying and selling signals respectively. USING THE 70 AND 30 LINES TO GENERATE SIGNALS Horizontal lines ap",
+      "supporting_passages": [
+        "The stock rallied to a new high, while RSI couldn\u2019t reach its upper reference line, pointing to that rally\u2019s hidden weakness. The sharp break near the right edge pushes prices lower despite the RSI buy signal. To avoid getting hurt, we must use protective stops because the last trade in a range can easily create a loss when a new trend begins. 27. RELATIVE STRENGTH INDEX 101 day because the settle",
+        "profits. Choosing the width of the Stochastic window is important. Shorter-term oscillators are more sensitive. Longer-term oscillators turn only at important tops and bottoms. If you use Stochastic as a stand-alone oscillator, a longer Stochastic is preferable. If you use Stochastic as part of a trading system, combined with trend- following indicators, then a shorter Stochastic is preferable. \u25a0 "
+      ],
+      "sources": [
+        "murphy",
+        "elder"
+      ],
+      "bullish_signals": 4,
+      "bearish_signals": 3,
+      "recommendation": "PROCEED"
+    },
+    "risk_evaluation": {
+      "approved": true,
+      "reason": "All risk rules passed",
+      "position": {
+        "position_usd": 20.0,
+        "quantity": 0.287439,
+        "entry_price": 69.58,
+        "stop_loss_price": 68.5363,
+        "take_profit_price": 71.6674,
+        "risk_usd": 0.3,
+        "reward_usd": 0.6
+      },
+      "risk_reward_ratio": "2:1",
+      "max_loss_usd": 0.3,
+      "target_gain_usd": 0.6
+    },
+    "final_decision": "EXECUTE: TRUE"
   }
 ]

@@ -7,7 +7,7 @@ import pandas_ta as ta
 from datetime import datetime
 from dotenv import load_dotenv
 from trigger_log import log_trigger
-from agents.sentiment_agent import get_sentiment
+from orchestrator import route_to_orchestrator
 
 load_dotenv()
 
@@ -104,15 +104,9 @@ async def process_symbol(exchange, symbol, candle_buffers):
                 print(f"\n🚨 [QUANT TRIGGER] {symbol}:")
                 print(json.dumps(state_matrix, indent=2))
                 print("=" * 50)
-                print("[*] Fetching sentiment data...")
-                sentiment = get_sentiment(
-                    state_matrix['ticker'],
-                    state_matrix['quant_trigger']['direction']
+                await asyncio.get_event_loop().run_in_executor(
+                    None, route_to_orchestrator, state_matrix
                 )
-                state_matrix['sentiment'] = sentiment
-                log_trigger(state_matrix)
-                print(f"[✓] Sentiment score: {sentiment['sentiment_score']}/10")
-                print(f"[✓] Trap warning: {sentiment['trap_warning']}")
 
         except Exception as e:
             print(f"[!] Error on {symbol}: {e}")
