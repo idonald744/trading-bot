@@ -70,7 +70,8 @@ async def process_symbol(exchange, symbol, candle_buffers):
 
             is_bullish = (current_rsi <= RSI_OVERSOLD) and (macd_line > macd_signal)
             is_bearish = (current_rsi >= RSI_OVERBOUGHT) and (macd_line < macd_signal)
-
+            
+           
             print(f"[{datetime.now().strftime('%H:%M:%S')}] "
                   f"{symbol}: ${current_price:,.2f} | "
                   f"RSI: {current_rsi:.2f} | "

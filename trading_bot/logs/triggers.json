@@ -19,5 +19,145 @@
     "consensus": {
       "status": "AWAITING_AGENT_EVALUATION"
     }
+  },
+  {
+    "session_id": "trigger_1782257400",
+    "timestamp": "2026-06-23 23:30:00",
+    "ticker": "BTCUSDT",
+    "quant_trigger": {
+      "direction": "BUY_SIGNAL",
+      "indicator_setup": "RSI + MACD + Bollinger Confluence",
+      "timeframe": "15m",
+      "price_at_trigger": 62673.2
+    },
+    "market_metrics": {
+      "rsi_14": 48.51,
+      "macd_line": 107.3349,
+      "macd_signal": 97.7477,
+      "volume_spike": false,
+      "recent_volume": 0.1
+    },
+    "consensus": {
+      "status": "AWAITING_AGENT_EVALUATION"
+    },
+    "sentiment": {
+      "sentiment_score": 6,
+      "smart_money_signal": "neutral",
+      "retail_signal": "neutral",
+      "key_narratives": [
+        "Strive Adds 759 Bitcoin As Corporate BTC Treasury Race Continues",
+        "Nakamoto Inc. closes legacy healthcare clinics, shifts focus entirely to Bitcoin operations",
+        "Altseason Call Returns As Ash Crypto Points To July Window"
+      ],
+      "trap_warning": false,
+      "trap_reason": null,
+      "confidence": "high",
+      "headlines_analyzed": 20
+    }
+  },
+  {
+    "session_id": "trigger_1782257400",
+    "timestamp": "2026-06-23 23:30:00",
+    "ticker": "ETHUSDT",
+    "quant_trigger": {
+      "direction": "BUY_SIGNAL",
+      "indicator_setup": "RSI + MACD + Bollinger Confluence",
+      "timeframe": "15m",
+      "price_at_trigger": 1664.75
+    },
+    "market_metrics": {
+      "rsi_14": 47.58,
+      "macd_line": 2.3299,
+      "macd_signal": 2.0501,
+      "volume_spike": false,
+      "recent_volume": 0.26
+    },
+    "consensus": {
+      "status": "AWAITING_AGENT_EVALUATION"
+    },
+    "sentiment": {
+      "sentiment_score": 6,
+      "smart_money_signal": "neutral",
+      "retail_signal": "neutral",
+      "key_narratives": [
+        "Crypto News Today: AlphaPepe Nears Third CEX Partnership as Ethereum Price Prediction Targets $7,000",
+        "Ethereum Liquidity Clusters Put $1,900 And $1,600 In Focus",
+        "Altseason Call Returns As Ash Crypto Points To July Window"
+      ],
+      "trap_warning": false,
+      "trap_reason": null,
+      "confidence": "high",
+      "headlines_analyzed": 20
+    }
+  },
+  {
+    "session_id": "trigger_1782257400",
+    "timestamp": "2026-06-23 23:30:00",
+    "ticker": "SOLUSDT",
+    "quant_trigger": {
+      "direction": "BUY_SIGNAL",
+      "indicator_setup": "RSI + MACD + Bollinger Confluence",
+      "timeframe": "15m",
+      "price_at_trigger": 69.58
+    },
+    "market_metrics": {
+      "rsi_14": 49.93,
+      "macd_line": 0.2196,
+      "macd_signal": 0.2104,
+      "volume_spike": false,
+      "recent_volume": 74.71
+    },
+    "consensus": {
+      "status": "AWAITING_AGENT_EVALUATION"
+    },
+    "sentiment": {
+      "sentiment_score": 6,
+      "smart_money_signal": "neutral",
+      "retail_signal": "neutral",
+      "key_narratives": [
+        "Payments Firm MoneyGram Joins Solana (SOL) Network As Active Validator",
+        "Pump.fun GO Bounty Feature Draws Backlash Over Risky Crypto Tasks",
+        "MoneyGram becomes Solana validator, expands blockchain payments strategy"
+      ],
+      "trap_warning": false,
+      "trap_reason": null,
+      "confidence": "high",
+      "headlines_analyzed": 20
+    }
+  },
+  {
+    "session_id": "trigger_1782257400",
+    "timestamp": "2026-06-23 23:30:00",
+    "ticker": "BTCUSDT",
+    "quant_trigger": {
+      "direction": "BUY_SIGNAL",
+      "indicator_setup": "RSI + MACD + Bollinger Confluence",
+      "timeframe": "15m",
+      "price_at_trigger": 62673.2
+    },
+    "market_metrics": {
+      "rsi_14": 48.51,
+      "macd_line": 107.3349,
+      "macd_signal": 97.7477,
+      "volume_spike": false,
+      "recent_volume": 0.1
+    },
+    "consensus": {
+      "status": "AWAITING_AGENT_EVALUATION"
+    },
+    "sentiment": {
+      "sentiment_score": 6,
+      "smart_money_signal": "neutral",
+      "retail_signal": "neutral",
+      "key_narratives": [
+        "Strive Adds 759 Bitcoin As Corporate BTC Treasury Race Continues",
+        "Nakamoto Inc. closes legacy healthcare clinics, shifts focus entirely to Bitcoin operations",
+        "Altseason Call Returns As Ash Crypto Points To July Window"
+      ],
+      "trap_warning": false,
+      "trap_reason": null,
+      "confidence": "high",
+      "headlines_analyzed": 20
+    }
   }
 ]
