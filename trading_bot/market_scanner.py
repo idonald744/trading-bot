@@ -70,7 +70,9 @@ async def run_market_scanner():
         usdt_pairs = []
 
         for symbol, data in tickers.items():
-            if ((symbol.endswith('/USDT') or symbol.endswith('/USD')) and
+            # USD only for Canadian compliance, skip USDT duplicates
+            if (symbol.endswith('/USD') and
+                    not symbol.endswith('/USDT') and
                     data.get('quoteVolume') is not None):
                 usdt_pairs.append(data)
 

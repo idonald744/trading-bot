@@ -82,12 +82,22 @@ async def process_symbol(exchange, symbol):
                 continue
 
             # ATR volatility filter
-            df.ta.atr(length=14, append=True)
-            atr_col = [c for c in df.columns if 'ATR' in c]
-            if atr_col:
-                df['atr_ma'] = df[atr_col[0]].rolling(20).mean()
-                high_volatility = latest_row[atr_col[0]] > df['atr_ma'].iloc[-1]
-            else:
+            try:
+                df.ta.atr(length=14, append=True)
+                atr_cols = [c for c in df.columns if 'ATR' in c.upper()]
+                if atr_cols:
+                    atr_col = atr_cols[0]
+                    df['atr_ma'] = df[atr_col].rolling(20).mean()
+                    latest_atr = df[atr_col].iloc[-1]
+                    latest_atr_ma = df['atr_ma'].iloc[-1]
+                    high_volatility = (
+                        not pd.isna(latest_atr) and
+                        not pd.isna(latest_atr_ma) and
+                        latest_atr > latest_atr_ma
+                    )
+                else:
+                    high_volatility = True
+            except Exception:
                 high_volatility = True
 
             is_bullish = (
