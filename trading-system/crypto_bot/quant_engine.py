@@ -1,0 +1,139 @@
+import asyncio
+import json
+import ccxt
+import ccxt.pro as ccxtpro
+import pandas as pd
+import pandas_ta as ta
+from datetime import datetime
+from dotenv import load_dotenv
+from trigger_log import log_trigger
+from orchestrator import route_to_orchestrator
+
+load_dotenv()
+
+# ==========================================
+# CONFIGURATION
+# ==========================================
+SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
+TIMEFRAME = '15m'
+MAX_CANDLES = 100
+RSI_OVERSOLD = 30
+RSI_OVERBOUGHT = 70
+
+print(f"[*] Initializing Quant Engine for {SYMBOLS}...")
+
+async def process_symbol(exchange, symbol, candle_buffers):
+    if symbol not in candle_buffers:
+        # Pre-seed historical data
+        rest = ccxt.kraken({'enableRateLimit': True})
+        historical = rest.fetch_ohlcv(symbol, TIMEFRAME, limit=MAX_CANDLES)
+        candle_buffers[symbol] = historical
+        print(f"[✓] Synced {len(historical)} candles for {symbol}")
+
+    while True:
+        try:
+            ohlcv = await exchange.watch_ohlcv(symbol, TIMEFRAME)
+            latest = ohlcv[-1]
+            timestamp = latest[0]
+
+            if candle_buffers[symbol] and candle_buffers[symbol][-1][0] == timestamp:
+                candle_buffers[symbol][-1] = latest
+            else:
+                candle_buffers[symbol].append(latest)
+
+            if len(candle_buffers[symbol]) > MAX_CANDLES:
+                candle_buffers[symbol].pop(0)
+
+            df = pd.DataFrame(
+                candle_buffers[symbol],
+                columns=['timestamp', 'open', 'high', 'low', 'close', 'volume']
+            )
+            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+            for col in ['open', 'high', 'low', 'close', 'volume']:
+                df[col] = df[col].astype(float)
+
+            # Calculate indicators
+            df.ta.rsi(length=14, append=True)
+            df.ta.macd(fast=12, slow=26, signal=9, append=True)
+            df.ta.bbands(length=20, append=True)
+            df['volume_ma'] = df['volume'].rolling(20).mean()
+            df['volume_spike'] = df['volume'] > (df['volume_ma'] * 1.5)
+
+            latest_row = df.iloc[-1]
+            current_price = latest_row['close']
+            current_rsi = latest_row['RSI_14']
+            macd_line = latest_row['MACD_12_26_9']
+            macd_signal = latest_row['MACDs_12_26_9']
+
+            if pd.isna(current_rsi) or pd.isna(macd_line):
+                continue
+
+            is_bullish = (current_rsi <= RSI_OVERSOLD) and (macd_line > macd_signal)
+            is_bearish = (current_rsi >= RSI_OVERBOUGHT) and (macd_line < macd_signal)
+            
+           
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] "
+                  f"{symbol}: ${current_price:,.2f} | "
+                  f"RSI: {current_rsi:.2f} | "
+                  f"MACD: {macd_line:.4f}")
+
+            if is_bullish or is_bearish:
+                state_matrix = {
+                    "session_id": f"trigger_{int(timestamp/1000)}",
+                    "timestamp": datetime.fromtimestamp(
+                        timestamp/1000).strftime('%Y-%m-%d %H:%M:%S'),
+                    "ticker": symbol.replace('/', ''),
+                    "quant_trigger": {
+                        "direction": "BUY_SIGNAL" if is_bullish else "SELL_SIGNAL",
+                        "indicator_setup": "RSI + MACD + Bollinger Confluence",
+                        "timeframe": TIMEFRAME,
+                        "price_at_trigger": current_price
+                    },
+                    "market_metrics": {
+                        "rsi_14": round(current_rsi, 2),
+                        "macd_line": round(macd_line, 4),
+                        "macd_signal": round(macd_signal, 4),
+                        "volume_spike": bool(latest_row['volume_spike']),
+                        "recent_volume": round(latest_row['volume'], 2)
+                    },
+                    "consensus": {
+                        "status": "AWAITING_AGENT_EVALUATION"
+                    }
+                }
+
+                print(f"\n🚨 [QUANT TRIGGER] {symbol}:")
+                print(json.dumps(state_matrix, indent=2))
+                print("=" * 50)
+                await asyncio.get_event_loop().run_in_executor(
+                    None, route_to_orchestrator, state_matrix
+                )
+
+        except Exception as e:
+            print(f"[!] Error on {symbol}: {e}")
+            await asyncio.sleep(5)
+
+async def main():
+    exchange = ccxtpro.kraken({
+        'enableRateLimit': True,
+        'options': {'defaultType': 'spot'}
+    })
+
+    candle_buffers = {}
+
+    try:
+        tasks = [
+            process_symbol(exchange, symbol, candle_buffers)
+            for symbol in SYMBOLS
+        ]
+        await asyncio.gather(*tasks)
+    except KeyboardInterrupt:
+        print("\n[!] Engine stopped manually.")
+    finally:
+        await exchange.close()
+        print("[*] WebSocket closed cleanly.")
+
+if __name__ == '__main__':
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n[!] Exiting gracefully.")
