@@ -83,43 +83,73 @@ def risk_node(state: TradingState) -> TradingState:
     return state
 
 def claude_gatekeeper_node(state: TradingState) -> TradingState:
-    print("\n[4/4] 🤖 Running Rule-Based Gatekeeper (Claude placeholder)...")
-    
+    print("\n[4/4] 🤖 Running Claude Sonnet Gatekeeper...")
+
+    matrix = state['state_matrix']
     sentiment = state['sentiment_result']
     rag = state['rag_result']
     risk = state['risk_result']
-    matrix = state['state_matrix']
 
-    # Simple rule-based decision until Claude API is funded
-    reasons = []
+    import anthropic
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
-    if not rag['validated']:
-        reasons.append("textbook validation failed")
+    brief = f"""You are a senior risk officer for a crypto trading firm.
+Review this trade setup and make a final decision.
 
-    if sentiment['sentiment_score'] < 4:
-        reasons.append("sentiment too negative")
+TRADE SETUP:
+- Ticker: {matrix['ticker']}
+- Direction: {matrix['quant_trigger']['direction']}
+- Price: ${matrix['quant_trigger']['price_at_trigger']}
+- RSI: {matrix['market_metrics']['rsi_14']}
+- MACD: {matrix['market_metrics']['macd_line']}
+- Volume Spike: {matrix['market_metrics']['volume_spike']}
 
-    if sentiment['sentiment_score'] > 8:
-        reasons.append("sentiment too euphoric")
+SENTIMENT ANALYSIS:
+- Score: {sentiment['sentiment_score']}/10
+- Smart Money: {sentiment['smart_money_signal']}
+- Retail Signal: {sentiment['retail_signal']}
+- Trap Warning: {sentiment['trap_warning']}
+- Key Narratives: {sentiment['key_narratives'][:2]}
 
-    if not risk['approved']:
-        reasons.append(risk['reason'])
+TEXTBOOK VALIDATION:
+- Validated: {rag['validated']}
+- Sources: {rag['sources']}
+- Recommendation: {rag['recommendation']}
+- Methodology: {rag['methodology'][:200]}
 
-    if reasons:
-        decision = f"EXECUTE: FALSE\nREASON: {', '.join(reasons)}"
-    else:
-        decision = "EXECUTE: TRUE"
+RISK ASSESSMENT:
+- Approved: {risk['approved']}
+- Reason: {risk['reason']}
+- Position Size: ${risk['position']['position_usd'] if risk['position'] else 'N/A'}
+- Stop Loss: ${risk['position']['stop_loss_price'] if risk['position'] else 'N/A'}
+- Take Profit: ${risk['position']['take_profit_price'] if risk['position'] else 'N/A'}
+
+Respond with ONLY one of these two formats:
+EXECUTE: TRUE
+or
+EXECUTE: FALSE
+REASON: [one sentence explanation]"""
+
+    try:
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=100,
+            messages=[{"role": "user", "content": brief}]
+        )
+        decision = response.content[0].text.strip()
+    except Exception as e:
+        print(f"[!] Claude API error: {e}")
+        print("[*] Falling back to rule-based decision...")
+        # Fallback if API fails
+        decision = "EXECUTE: TRUE" if (
+            rag['validated'] and
+            risk['approved'] and
+            4 <= sentiment['sentiment_score'] <= 8
+        ) else "EXECUTE: FALSE\nREASON: Fallback rules failed"
 
     state['final_decision'] = decision
     matrix['final_decision'] = decision
-
     print(f"\n     Decision: {decision}")
-
-    # TODO: Replace with Claude API when funded:
-    # import anthropic
-    # client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-    # response = client.messages.create(...)
-
     return state
 
 # ==========================================
