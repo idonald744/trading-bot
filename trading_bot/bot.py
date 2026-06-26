@@ -20,6 +20,7 @@ MAX_CANDLES = 100
 RSI_OVERSOLD = 30
 RSI_OVERBOUGHT = 70
 SCAN_INTERVAL_MINUTES = 15  # Rescan market every 15 minutes
+REQUIRE_VOLATILITY = True  # Only trade during high volatility periods
 
 # Shared state
 current_watchlist = []
@@ -80,8 +81,25 @@ async def process_symbol(exchange, symbol):
             if pd.isna(current_rsi) or pd.isna(macd_line):
                 continue
 
-            is_bullish = (current_rsi <= RSI_OVERSOLD) and (macd_line > macd_signal_val)
-            is_bearish = (current_rsi >= RSI_OVERBOUGHT) and (macd_line < macd_signal_val)
+            # ATR volatility filter
+            df.ta.atr(length=14, append=True)
+            atr_col = [c for c in df.columns if 'ATR' in c]
+            if atr_col:
+                df['atr_ma'] = df[atr_col[0]].rolling(20).mean()
+                high_volatility = latest_row[atr_col[0]] > df['atr_ma'].iloc[-1]
+            else:
+                high_volatility = True
+
+            is_bullish = (
+                (current_rsi <= RSI_OVERSOLD) and
+                (macd_line > macd_signal_val) and
+                (not REQUIRE_VOLATILITY or high_volatility)
+            )
+            is_bearish = (
+                (current_rsi >= RSI_OVERBOUGHT) and
+                (macd_line < macd_signal_val) and
+                (not REQUIRE_VOLATILITY or high_volatility)
+            )
 
             print(f"[{datetime.now().strftime('%H:%M:%S')}] "
                   f"{symbol}: ${current_price:,.4f} | RSI: {current_rsi:.2f}")
