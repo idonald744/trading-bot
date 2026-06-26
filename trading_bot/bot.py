@@ -177,9 +177,14 @@ async def main():
     ╚══════════════════════════════════════╝
     """)
 
+    import aiohttp
+    resolver = aiohttp.AsyncResolver(nameservers=['8.8.8.8', '8.8.4.4'])
+    connector = aiohttp.TCPConnector(resolver=resolver)
+    session = aiohttp.ClientSession(connector=connector)
     exchange = ccxtpro.kraken({
         'enableRateLimit': True,
-        'options': {'defaultType': 'spot'}
+        'options': {'defaultType': 'spot'},
+        'session': session
     })
 
     try:

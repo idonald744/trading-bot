@@ -1,8 +1,16 @@
 import asyncio
+import sys
+
+# Windows asyncio fix
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+import asyncio
 import json
 import pandas as pd
 import pandas_ta as ta
 import ccxt.async_support as ccxt
+import aiohttp
 from datetime import datetime
 
 # ==========================================
@@ -60,7 +68,13 @@ async def fetch_and_analyze_ticker(exchange, symbol, change_24h):
     return None
 
 async def run_market_scanner():
-    exchange = ccxt.kraken({'enableRateLimit': True})
+    resolver = aiohttp.AsyncResolver(nameservers=['8.8.8.8', '8.8.4.4'])
+    connector = aiohttp.TCPConnector(resolver=resolver)
+    session = aiohttp.ClientSession(connector=connector)
+    exchange = ccxt.kraken({
+        'enableRateLimit': True,
+        'session': session
+    })
     print(f"[*] Starting Market Scan: "
           f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
