@@ -1,0 +1,24 @@
+{
+  "summary": {
+    "total_trades": 1,
+    "starting_balance": 1000.0,
+    "current_balance": 1000.0,
+    "return_pct": 0.0
+  },
+  "trades": [
+    {
+      "timestamp": "2026-06-26 09:08:40",
+      "ticker": "SOLUSDT",
+      "direction": "BUY_SIGNAL",
+      "price": 69.58,
+      "position_usd": 20.0,
+      "quantity": 0.287439,
+      "stop_loss": 68.5363,
+      "take_profit": 71.6674,
+      "paper_balance_before": 1000.0,
+      "status": "OPEN",
+      "validated": false,
+      "error": "kraken {\"error\":[\"EAccount:Invalid permissions:USDT trading restricted for CA:AB.\"]}"
+    }
+  ]
+}

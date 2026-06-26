@@ -8,6 +8,7 @@ from agents.sentiment_agent import get_sentiment
 from agents.rag_agent import query_textbooks
 from agents.risk_agent import evaluate_risk
 from trigger_log import log_trigger
+from execution import execute_paper_trade
 
 load_dotenv()
 
@@ -224,6 +225,12 @@ def route_to_orchestrator(state_matrix: dict) -> dict:
     # Log the final enriched state matrix
     log_trigger(result['state_matrix'])
 
+    # Execute paper trade
+    execute_paper_trade(
+        result['final_decision'],
+        result['state_matrix']
+    )
+
     print("\n" + "="*50)
     print(f"FINAL DECISION: {result['final_decision']}")
     print("="*50 + "\n")
@@ -235,7 +242,7 @@ if __name__ == "__main__":
     test_matrix = {
         "session_id": "test_001",
         "timestamp": "2026-06-24 01:00:00",
-        "ticker": "SOLUSDT",
+        "ticker": "SOLUSD",
         "quant_trigger": {
             "direction": "BUY_SIGNAL",
             "indicator_setup": "RSI + MACD + Bollinger Confluence",
