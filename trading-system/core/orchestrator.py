@@ -63,7 +63,11 @@ def rag_node(state: TradingState) -> TradingState:
 
 def risk_node(state: TradingState) -> TradingState:
     print("\n[3/4] 🛡️ Running Risk Agent...")
-    from core.agents.risk_agent import evaluate_risk
+    prompt_type = state.get('prompt_type', 'crypto')
+    if prompt_type == 'stock':
+        from stock_bot.risk_agent import evaluate_stock_risk as evaluate_risk
+    else:
+        from core.agents.risk_agent import evaluate_risk
 
     matrix = state['state_matrix']
     risk = evaluate_risk(matrix)

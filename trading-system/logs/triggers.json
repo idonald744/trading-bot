@@ -1,0 +1,91 @@
+[
+  {
+    "session_id": "stock_test_001",
+    "timestamp": "2026-06-26 10:00:00",
+    "ticker": "CRM",
+    "catalyst": {
+      "type": "Strong Catalyst",
+      "strength": "strong",
+      "headline": "CRM beats earnings expectations by 15 percent",
+      "float_shares": "Unknown",
+      "short_interest_pct": "Unknown",
+      "catalyst_float_ratio": "Strong catalyst on large cap"
+    },
+    "quant_trigger": {
+      "direction": "BUY_SIGNAL",
+      "indicator_setup": "ORB + VWAP + Volume Momentum",
+      "timeframe": "1m",
+      "price_at_trigger": 158.32
+    },
+    "market_metrics": {
+      "rsi_14": 62.5,
+      "macd_line": 0.3194,
+      "macd_signal": 0.267,
+      "volume_spike": true,
+      "recent_volume": 5.4
+    },
+    "momentum_metrics": {
+      "premarket_change_pct": 4.51,
+      "volume_ratio": 5.4,
+      "above_vwap": true,
+      "orb_confirmed": true,
+      "vwap": 156.62
+    },
+    "consensus": {
+      "status": "AWAITING_AGENT_EVALUATION"
+    },
+    "prompt_type": "stock",
+    "sentiment": {
+      "sentiment_score": 6,
+      "smart_money_signal": "neutral",
+      "retail_signal": "neutral",
+      "key_narratives": [
+        "wealthbox 0.17.0",
+        "[Latest] Global Healthcare Discount Plan Market Size/Share Worth USD 48.37 Billion by 2035 at a 8.8% CAGR: Healthcare Foresights (Analysis, Outlook, Leaders, Report, Trends, Forecast, Segmentation, Growth Rate, Value, SWOT Analysis)",
+        "Fired employee tampers with clients\u2019 data to sabotage school-tech vendor in Ahmedabad"
+      ],
+      "trap_warning": false,
+      "trap_reason": null,
+      "confidence": "high",
+      "headlines_analyzed": 20
+    },
+    "rag_validation": {
+      "validated": true,
+      "methodology": "in the opposite direction, breaking a previous high or low, then a diver\u00ac gence or failure swing is confirmed. The 50 level is the RSI midpoint value, and will often act as support during pullbacks and resistance during bounces. Some traders treat RSI crossings above and below the 50 level as buying and selling signals respectively. USING THE 70 AND 30 LINES TO GENERATE SIGNALS Horizontal lines ap",
+      "supporting_passages": [
+        "of technical indicators, and it might be a combination of RSI or the moving average crossover. I don't believe in any of them. I don\u2019t think that they work for day trading, especially over the long term. Some of my day trader colleagues may disagree with me, but my personal experience is that you cannot enter a trade with a systemic approach and then let indicators dictate your entry and exit. Tha",
+        "profits. Choosing the width of the Stochastic window is important. Shorter-term oscillators are more sensitive. Longer-term oscillators turn only at important tops and bottoms. If you use Stochastic as a stand-alone oscillator, a longer Stochastic is preferable. If you use Stochastic as part of a trading system, combined with trend- following indicators, then a shorter Stochastic is preferable. \u25a0 "
+      ],
+      "sources": [
+        "aziz",
+        "murphy",
+        "elder"
+      ],
+      "bullish_signals": 4,
+      "bearish_signals": 3,
+      "recommendation": "PROCEED"
+    },
+    "risk_evaluation": {
+      "approved": true,
+      "reason": "All stock risk rules passed",
+      "position": {
+        "position_usd": 28.69,
+        "quantity": 0.1812,
+        "entry_price": 158.32,
+        "stop_loss_price": 155.8369,
+        "take_profit_price": 165.7693,
+        "target_2_price": 170.7355,
+        "stop_distance_pct": 1.57,
+        "risk_usd": 0.45,
+        "reward_usd_t1": 1.35,
+        "reward_usd_t2": 2.25,
+        "risk_reward": "3.0:1 min / 5:1 stretch"
+      },
+      "structural_stop": 155.8369,
+      "vwap_reference": 156.62,
+      "catalyst_strength": "strong",
+      "volume_ratio": 5.4
+    },
+    "final_decision": "EXECUTE: FALSE\nREASON: While the earnings beat catalyst and technical setup are valid, the sentiment analysis contains completely irrelevant narratives (healthcare market reports, unrelated software) with a neutral smart money signal and unknown catalyst quality, suggesting insufficient institutional conviction to justify even this minimal position on a large-cap name where a 15% earnings beat is already largely priced into the modest 4.51% pre-market move."
+  }
+]

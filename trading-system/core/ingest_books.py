@@ -16,7 +16,10 @@ BOOKS = {
     "douglas": "douglas.pdf",
     "elder": "elder.pdf",
     "weinstein": "weinstein.pdf",
-    "oneil": "oneil.pdf"
+    "oneil": "oneil.pdf",
+    "aziz": "aziz.pdf",
+    "minervini": "minervini.pdf",
+    "grimes": "grimes.pdf"
 }
 
 def get_embed_model():
@@ -159,5 +162,5 @@ if __name__ == "__main__":
             ingest_single_book(sys.argv[2])
     elif sys.argv[1] == "query":
         query_knowledge_base(
-            "What does Elder say about RSI when it drops below 30?"
+            "What does Aziz say about the opening range breakout and VWAP for momentum day trading?"
         )
