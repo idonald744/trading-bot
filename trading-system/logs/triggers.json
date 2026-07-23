@@ -87,5 +87,74 @@
       "volume_ratio": 5.4
     },
     "final_decision": "EXECUTE: FALSE\nREASON: While the earnings beat catalyst and technical setup are valid, the sentiment analysis contains completely irrelevant narratives (healthcare market reports, unrelated software) with a neutral smart money signal and unknown catalyst quality, suggesting insufficient institutional conviction to justify even this minimal position on a large-cap name where a 15% earnings beat is already largely priced into the modest 4.51% pre-market move."
+  },
+  {
+    "session_id": "smoketest_1784800717",
+    "timestamp": "2026-07-23 03:58:37",
+    "ticker": "TESTUSD",
+    "quant_trigger": {
+      "direction": "BUY_SIGNAL",
+      "indicator_setup": "RSI + MACD + Bollinger Confluence",
+      "timeframe": "15m",
+      "price_at_trigger": 50000.0
+    },
+    "market_metrics": {
+      "rsi_14": 28.0,
+      "macd_line": 0.05,
+      "macd_signal": 0.03,
+      "volume_spike": true,
+      "recent_volume": 1000.0
+    },
+    "consensus": {
+      "status": "AWAITING_AGENT_EVALUATION"
+    },
+    "prompt_type": "crypto",
+    "sentiment": {
+      "sentiment_score": 5,
+      "smart_money_signal": "neutral",
+      "retail_signal": "neutral",
+      "key_narratives": [
+        "Movement Labs Files for Bankruptcy \u2014 MOVE Price Crashes 94%",
+        "Bitcoin hits $66K amid high leverage, low spot demand concerns",
+        "As Bitcoin breaches $66K its latest bottom signal trapped buyers in a 20% loss"
+      ],
+      "trap_warning": false,
+      "trap_reason": null,
+      "confidence": "high",
+      "headlines_analyzed": 20
+    },
+    "rag_validation": {
+      "validated": true,
+      "methodology": "in the opposite direction, breaking a previous high or low, then a diver\u00ac gence or failure swing is confirmed. The 50 level is the RSI midpoint value, and will often act as support during pullbacks and resistance during bounces. Some traders treat RSI crossings above and below the 50 level as buying and selling signals respectively. USING THE 70 AND 30 LINES TO GENERATE SIGNALS Horizontal lines ap",
+      "supporting_passages": [
+        "The stock rallied to a new high, while RSI couldn\u2019t reach its upper reference line, pointing to that rally\u2019s hidden weakness. The sharp break near the right edge pushes prices lower despite the RSI buy signal. To avoid getting hurt, we must use protective stops because the last trade in a range can easily create a loss when a new trend begins. 27. RELATIVE STRENGTH INDEX 101 day because the settle",
+        "of technical indicators, and it might be a combination of RSI or the moving average crossover. I don't believe in any of them. I don\u2019t think that they work for day trading, especially over the long term. Some of my day trader colleagues may disagree with me, but my personal experience is that you cannot enter a trade with a systemic approach and then let indicators dictate your entry and exit. Tha"
+      ],
+      "sources": [
+        "aziz",
+        "elder",
+        "murphy"
+      ],
+      "bullish_signals": 4,
+      "bearish_signals": 2,
+      "recommendation": "PROCEED"
+    },
+    "risk_evaluation": {
+      "approved": true,
+      "reason": "All risk rules passed",
+      "position": {
+        "position_usd": 20.0,
+        "quantity": 0.0004,
+        "entry_price": 50000.0,
+        "stop_loss_price": 49250.0,
+        "take_profit_price": 51500.0,
+        "risk_usd": 0.3,
+        "reward_usd": 0.6
+      },
+      "risk_reward_ratio": "2:1",
+      "max_loss_usd": 0.3,
+      "target_gain_usd": 0.6
+    },
+    "final_decision": "EXECUTE: TRUE"
   }
 ]
