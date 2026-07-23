@@ -10,19 +10,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Windows async fix
-if sys.platform == 'win32':
-    import asyncio
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
 # ==========================================
 # SCANNER CONFIGURATION
 # ==========================================
-VOLUME_RATIO_MIN = 3.0       # 3x average volume minimum
+VOLUME_RATIO_MIN = 0.7       # Lowered for intraday volume calculation
 RSI_MIN = 45                 # Momentum zone minimum
 RSI_MAX = 75                 # Not exhausted maximum
 PRICE_MIN = 5.0              # Minimum stock price
-PRICE_MAX = 500.0            # Maximum stock price
+PRICE_MAX = 1000.0
 PREMARKET_CHANGE_MIN = 2.0   # Minimum move %
 
 # High momentum universe — mix of large cap and momentum stocks
@@ -143,8 +138,36 @@ def analyze_stock(symbol: str) -> dict:
         df.ta.rsi(length=14, append=True)
         df.ta.macd(fast=12, slow=26, signal=9, append=True)
         df['vwap'] = calculate_vwap(df)
-        df['volume_ma'] = df['Volume'].rolling(20).mean()
-        df['volume_ratio'] = df['Volume'] / df['volume_ma']
+
+        # Project today's volume based on time elapsed in trading day
+        try:
+            import pytz
+            from datetime import datetime
+            est = pytz.timezone('US/Eastern')
+            now_est = datetime.now(est)
+            
+            # Minutes elapsed since market open
+            market_open = now_est.replace(hour=9, minute=30, second=0)
+            minutes_elapsed = max(1, (now_est - market_open).seconds / 60)
+            total_minutes = 390  # 6.5 hour trading day
+            
+            # Project full day volume based on pace
+            pct_day_elapsed = minutes_elapsed / total_minutes
+            total_vol_today = df['Volume'].sum()
+            projected_vol = total_vol_today / pct_day_elapsed if pct_day_elapsed > 0 else total_vol_today
+
+            ticker_obj = yf.Ticker(symbol)
+            hist_20d = ticker_obj.history(period='20d', interval='1d')
+            avg_daily_vol = hist_20d['Volume'].mean() if not hist_20d.empty else 0
+
+            if avg_daily_vol > 0:
+                day_volume_ratio = projected_vol / avg_daily_vol
+            else:
+                day_volume_ratio = 1.0
+        except Exception:
+            day_volume_ratio = 1.0
+
+        volume_ratio = day_volume_ratio
 
         latest = df.iloc[-1]
         rsi = latest.get('RSI_14', 50)
@@ -152,7 +175,6 @@ def analyze_stock(symbol: str) -> dict:
         macd_signal_val = latest.get('MACDs_12_26_9', 0)
         price = latest['Close']
         vwap = latest['vwap']
-        volume_ratio = latest['volume_ratio']
 
         if pd.isna(rsi) or pd.isna(macd_line) or pd.isna(price):
             return None

@@ -1,11 +1,4 @@
 import asyncio
-import sys
-
-# Windows asyncio fix
-if sys.platform == 'win32':
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-import asyncio
 import json
 import pandas as pd
 import pandas_ta as ta
@@ -137,4 +130,7 @@ async def run_market_scanner():
         await connector.close()
 
 if __name__ == '__main__':
+    import sys
+    if sys.platform == 'win32':
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     asyncio.run(run_market_scanner())
