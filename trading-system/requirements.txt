@@ -81,6 +81,7 @@ MarkupSafe==3.0.3
 marshmallow==3.26.2
 mdurl==0.1.2
 msgpack==1.2.1
+moomoo-api==10.9.6908
 multidict==6.7.1
 multitasking==0.0.13
 mypy_extensions==1.1.0

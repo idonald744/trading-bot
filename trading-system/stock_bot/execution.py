@@ -1,9 +1,20 @@
 import os
+import sys
 import json
 from datetime import datetime
 from dotenv import load_dotenv
 
+from stock_bot import moomoo_client
+
 load_dotenv()
+
+# Windows consoles can default to a non-UTF-8 codepage (e.g. cp1252), which
+# raises UnicodeEncodeError on the emoji/box-drawing characters used in the
+# print statements below. Make stdout/stderr tolerant so a console encoding
+# mismatch can't crash trade execution or logging.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, 'reconfigure'):
+        _stream.reconfigure(errors='replace')
 
 # ==========================================
 # PAPER TRADING CONFIGURATION
@@ -14,15 +25,6 @@ POSITION_SIZE_PCT = 0.03  # 3% for stocks (slightly higher than crypto)
 
 paper_trades = []
 paper_balance = PORTFOLIO_BALANCE
-
-def get_alpaca_client():
-    """Get Alpaca paper trading client"""
-    from alpaca.trading.client import TradingClient
-    return TradingClient(
-        api_key=os.getenv('ALPACA_API_KEY'),
-        secret_key=os.getenv('ALPACA_SECRET'),
-        paper=True
-    )
 
 def calculate_position(price: float, stop_loss: float, balance: float) -> dict:
     """Calculate position size based on structural stop distance"""
@@ -54,7 +56,7 @@ def calculate_position(price: float, stop_loss: float, balance: float) -> dict:
     }
 
 def execute_paper_trade(decision: str, state_matrix: dict) -> dict:
-    """Execute a paper stock trade via Alpaca"""
+    """Execute a paper stock trade via Moomoo (TrdEnv.SIMULATE)"""
     global paper_balance
 
     if 'EXECUTE: TRUE' not in decision:
@@ -86,19 +88,49 @@ def execute_paper_trade(decision: str, state_matrix: dict) -> dict:
         'paper_balance_before': round(paper_balance, 2)
     }
 
-    # Simulated paper trade execution
+    # Moomoo SIMULATE execution — gated by PAPER_TRADING here and by
+    # TrdEnv.SIMULATE hardcoded in moomoo_client.py; both must hold.
     if PAPER_TRADING:
-        import uuid
-        trade_record['order_id'] = str(uuid.uuid4())[:8]
-        trade_record['validated'] = True
-        trade_record['execution_type'] = 'SIMULATED'
-        print(f"✅ Paper trade simulated: {trade_record['order_id']}")
-        # TODO: Replace with IBKR execution when account approved
+        quantity = position.get('quantity', 0)
 
+        if quantity <= 0:
+            result = {'ret_ok': False, 'reason': 'Degenerate position size (quantity <= 0)'}
+        else:
+            try:
+                ctx = moomoo_client.get_moomoo_context()
+                try:
+                    result = moomoo_client.place_order(
+                        ctx, ticker=ticker, direction=direction,
+                        quantity=quantity, price=price,
+                    )
+                finally:
+                    ctx.close()
+            except Exception as e:
+                result = {'ret_ok': False, 'reason': str(e)}
+
+        if result.get('ret_ok'):
+            trade_record['order_id'] = result['order_id']
+            trade_record['order_status'] = result.get('order_status')
+            trade_record['validated'] = True
+            trade_record['execution_type'] = 'MOOMOO_SIMULATE'
+        else:
+            trade_record['status'] = 'REJECTED'
+            trade_record['validated'] = False
+            trade_record['execution_type'] = 'MOOMOO_SIMULATE'
+            trade_record['reason'] = result.get('reason', result.get('raw'))
+
+    # Persist before any display/print code runs — a print failure must never
+    # prevent, or appear to roll back, logging of a trade that already happened.
     paper_trades.append(trade_record)
     save_paper_trades()
 
-    print(f"""
+    try:
+        if trade_record.get('validated'):
+            print(f"[OK] Moomoo SIMULATE order placed: {trade_record['order_id']}")
+        elif trade_record.get('status') == 'REJECTED':
+            print(f"[!] Moomoo order rejected for {ticker}: {trade_record.get('reason')}")
+
+        print(f"""
     📋 STOCK PAPER TRADE LOGGED:
     ├── Ticker:    {ticker}
     ├── Direction: {direction}
@@ -110,6 +142,8 @@ def execute_paper_trade(decision: str, state_matrix: dict) -> dict:
     ├── Risk:      ${position.get('risk_usd', 0)}
     └── Balance:   ${paper_balance:.2f}
     """)
+    except Exception:
+        pass  # display-only; the trade is already durably logged above
 
     return trade_record
 
