@@ -1,0 +1,3 @@
+@echo off
+echo Starting Trading Bot Dashboard...
+start "Dashboard" cmd /k "cd /d %~dp0trading-system && venv\Scripts\activate && streamlit run dashboard\app.py"
