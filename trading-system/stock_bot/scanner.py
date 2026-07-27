@@ -5,6 +5,7 @@ import pandas as pd
 import pandas_ta as ta
 import requests
 import yfinance as yf
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
@@ -19,6 +20,7 @@ RSI_MAX = 75                 # Not exhausted maximum
 PRICE_MIN = 5.0              # Minimum stock price
 PRICE_MAX = 1000.0
 PREMARKET_CHANGE_MIN = 2.0   # Minimum move %
+MAX_WORKERS = 8              # Concurrent yfinance/NewsAPI requests — tune if throttled
 
 # High momentum universe — mix of large cap and momentum stocks
 STOCK_UNIVERSE = [
@@ -123,8 +125,57 @@ def calculate_vwap(df: pd.DataFrame) -> pd.Series:
     vwap = (typical_price * df['Volume']).cumsum() / df['Volume'].cumsum()
     return vwap
 
-def analyze_stock(symbol: str) -> dict:
-    """Fetch and analyze a single stock using Yahoo Finance"""
+def fetch_universe_prefilter(symbols: list) -> dict:
+    """
+    One batched daily-bar call for the whole universe, used to cheaply filter
+    out symbols before any per-symbol intraday fetch. Also carries the 20-day
+    average volume so analyze_stock() doesn't need its own second history()
+    call for survivors.
+
+    Returns {symbol: {"price", "prev_close", "change_pct", "avg_daily_vol_20d"}}
+    for symbols with usable data; symbols with missing/insufficient data are
+    simply omitted (same net effect as the old per-symbol try/except skip).
+    """
+    prefilter = {}
+    try:
+        data = yf.download(
+            symbols, period='2mo', interval='1d',
+            group_by='ticker', threads=True, progress=False
+        )
+    except Exception as e:
+        print(f"[!] Universe prefilter batch download failed: {e}")
+        return prefilter
+
+    for symbol in symbols:
+        try:
+            df = data[symbol].dropna(subset=['Close'])
+            if len(df) < 21:
+                continue
+
+            price = float(df['Close'].iloc[-1])
+            prev_close = float(df['Close'].iloc[-2])
+            if prev_close == 0:
+                continue
+            change_pct = ((price - prev_close) / prev_close) * 100
+            avg_daily_vol_20d = float(df['Volume'].iloc[-21:-1].mean())
+
+            prefilter[symbol] = {
+                "price": price,
+                "prev_close": prev_close,
+                "change_pct": change_pct,
+                "avg_daily_vol_20d": avg_daily_vol_20d
+            }
+        except Exception:
+            continue
+
+    return prefilter
+
+def analyze_stock(symbol: str, avg_daily_vol_20d: float) -> dict:
+    """
+    Fetch and analyze a single stock's intraday data using Yahoo Finance.
+    avg_daily_vol_20d comes from fetch_universe_prefilter()'s batched call,
+    so this only issues the one intraday history() request it actually needs.
+    """
     try:
         ticker = yf.Ticker(symbol)
 
@@ -145,23 +196,19 @@ def analyze_stock(symbol: str) -> dict:
             from datetime import datetime
             est = pytz.timezone('US/Eastern')
             now_est = datetime.now(est)
-            
+
             # Minutes elapsed since market open
             market_open = now_est.replace(hour=9, minute=30, second=0)
             minutes_elapsed = max(1, (now_est - market_open).seconds / 60)
             total_minutes = 390  # 6.5 hour trading day
-            
+
             # Project full day volume based on pace
             pct_day_elapsed = minutes_elapsed / total_minutes
             total_vol_today = df['Volume'].sum()
             projected_vol = total_vol_today / pct_day_elapsed if pct_day_elapsed > 0 else total_vol_today
 
-            ticker_obj = yf.Ticker(symbol)
-            hist_20d = ticker_obj.history(period='20d', interval='1d')
-            avg_daily_vol = hist_20d['Volume'].mean() if not hist_20d.empty else 0
-
-            if avg_daily_vol > 0:
-                day_volume_ratio = projected_vol / avg_daily_vol
+            if avg_daily_vol_20d > 0:
+                day_volume_ratio = projected_vol / avg_daily_vol_20d
             else:
                 day_volume_ratio = 1.0
         except Exception:
@@ -239,19 +286,45 @@ def run_stock_scanner() -> list:
         print("[*] Waiting for 9:45am EST opening range...")
         return []
 
-    print(f"[*] Scanning {len(STOCK_UNIVERSE)} stocks...")
-    results = []
+    # Stage 1 — one batched daily-bar call for the whole universe, cheap filter
+    print(f"[*] Prefiltering {len(STOCK_UNIVERSE)} stocks (batched daily bars)...")
+    prefilter = fetch_universe_prefilter(STOCK_UNIVERSE)
 
-    for symbol in STOCK_UNIVERSE:
-        result = analyze_stock(symbol)
-        if result:
-            catalyst = get_catalyst(symbol)
-            result['catalyst'] = catalyst
-            results.append(result)
-            print(f"  ✅ {symbol}: ${result['current_price']} | "
-                  f"RSI: {result['rsi_14']} | "
-                  f"Vol: {result['volume_ratio']}x | "
-                  f"Catalyst: {catalyst['strength']}")
+    candidates = [
+        symbol for symbol, data in prefilter.items()
+        if PRICE_MIN <= data['price'] <= PRICE_MAX
+        and abs(data['change_pct']) >= PREMARKET_CHANGE_MIN
+    ]
+    print(f"[✓] {len(candidates)} candidates passed price/change prefilter")
+
+    # Stage 2 — expensive intraday analysis, concurrent, candidates only
+    results = []
+    if candidates:
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+            futures = {
+                pool.submit(analyze_stock, symbol, prefilter[symbol]['avg_daily_vol_20d']): symbol
+                for symbol in candidates
+            }
+            for future in as_completed(futures):
+                result = future.result()
+                if result:
+                    results.append(result)
+
+    # Stage 3 — catalyst enrichment, concurrent, survivors only
+    if results:
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+            catalyst_futures = {
+                pool.submit(get_catalyst, r['symbol']): r for r in results
+            }
+            for future in as_completed(catalyst_futures):
+                r = catalyst_futures[future]
+                r['catalyst'] = future.result()
+
+        for r in results:
+            print(f"  ✅ {r['symbol']}: ${r['current_price']} | "
+                  f"RSI: {r['rsi_14']} | "
+                  f"Vol: {r['volume_ratio']}x | "
+                  f"Catalyst: {r['catalyst']['strength']}")
 
     print(f"\n🎯 =============================================")
     print(f"   STOCK WATCHLIST: {len(results)} targets")
