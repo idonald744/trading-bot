@@ -12,10 +12,26 @@ load_dotenv()
 PAPER_TRADING = True  # Set to False for live trading
 PORTFOLIO_BALANCE = 1000.0  # Starting paper balance
 POSITION_SIZE_PCT = 0.02    # 2% per trade
+LOG_FILE = 'logs/paper_trades.json'
+
+def _load_paper_trades() -> tuple:
+    """Restore trades/balance from disk so a bot restart doesn't reset
+    history to empty and overwrite it on the next save."""
+    if os.path.exists(LOG_FILE):
+        try:
+            with open(LOG_FILE, 'r') as f:
+                data = json.load(f)
+            trades = data.get('trades', [])
+            if not isinstance(trades, list):
+                trades = []
+            balance = data.get('summary', {}).get('current_balance', PORTFOLIO_BALANCE)
+            return trades, balance
+        except Exception:
+            pass
+    return [], PORTFOLIO_BALANCE
 
 # Track paper trading performance
-paper_trades = []
-paper_balance = PORTFOLIO_BALANCE
+paper_trades, paper_balance = _load_paper_trades()
 
 def get_exchange():
     return ccxt.kraken({
@@ -116,7 +132,8 @@ def execute_paper_trade(decision: str, state_matrix: dict) -> dict:
 
 def save_paper_trades():
     """Save paper trades to log file"""
-    with open('logs/paper_trades.json', 'w') as f:
+    os.makedirs('logs', exist_ok=True)
+    with open(LOG_FILE, 'w') as f:
         json.dump({
             'summary': {
                 'total_trades': len(paper_trades),

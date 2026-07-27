@@ -22,9 +22,25 @@ for _stream in (sys.stdout, sys.stderr):
 PAPER_TRADING = True
 PORTFOLIO_BALANCE = 1000.0
 POSITION_SIZE_PCT = 0.03  # 3% for stocks (slightly higher than crypto)
+LOG_FILE = 'logs/stock_paper_trades.json'
 
-paper_trades = []
-paper_balance = PORTFOLIO_BALANCE
+def _load_paper_trades() -> tuple:
+    """Restore trades/balance from disk so a bot restart doesn't reset
+    history to empty and overwrite it on the next save."""
+    if os.path.exists(LOG_FILE):
+        try:
+            with open(LOG_FILE, 'r') as f:
+                data = json.load(f)
+            trades = data.get('trades', [])
+            if not isinstance(trades, list):
+                trades = []
+            balance = data.get('summary', {}).get('current_balance', PORTFOLIO_BALANCE)
+            return trades, balance
+        except Exception:
+            pass
+    return [], PORTFOLIO_BALANCE
+
+paper_trades, paper_balance = _load_paper_trades()
 
 def calculate_position(price: float, stop_loss: float, balance: float) -> dict:
     """Calculate position size based on structural stop distance"""
@@ -150,7 +166,7 @@ def execute_paper_trade(decision: str, state_matrix: dict) -> dict:
 def save_paper_trades():
     """Save paper trades to log"""
     os.makedirs('logs', exist_ok=True)
-    with open('logs/stock_paper_trades.json', 'w') as f:
+    with open(LOG_FILE, 'w') as f:
         json.dump({
             'summary': {
                 'total_trades': len(paper_trades),
