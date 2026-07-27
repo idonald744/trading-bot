@@ -3,6 +3,7 @@ def get_stock_prompt(matrix: dict, sentiment: dict, rag: dict, risk: dict) -> st
     
     catalyst = matrix.get('catalyst', {})
     momentum = matrix.get('momentum_metrics', {})
+    fundamentals = matrix.get('fundamentals', {})
 
     divergence = sentiment.get('divergence', {})
     if divergence.get('detected'):
@@ -24,8 +25,9 @@ CATALYST ANALYSIS (most important factor):
 - Catalyst Type: {catalyst.get('type', 'Unknown')}
 - Catalyst Strength: {catalyst.get('strength', 'Unknown')}
 - News Headline: {catalyst.get('headline', 'None')}
-- Float Size: {catalyst.get('float_shares', 'Unknown')} shares
-- Short Interest: {catalyst.get('short_interest_pct', 'Unknown')}%
+- Market Cap: ${fundamentals.get('market_cap', 'Unknown')}
+- Float Size: {fundamentals.get('float_shares', 'Unknown')} shares
+- Short Interest: {fundamentals.get('short_interest_pct', 'Unknown')}%
 - Catalyst-to-Float Assessment: {catalyst.get('catalyst_float_ratio', 'Unknown')}
 
 MOMENTUM METRICS:

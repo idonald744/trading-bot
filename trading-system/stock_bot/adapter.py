@@ -57,6 +57,7 @@ class StockAdapter:
             session_prefix='stock',
             extras={
                 'catalyst': catalyst,
+                'fundamentals': scanner_result.get('fundamentals', {}),
                 'momentum_metrics': {
                     'premarket_change_pct': scanner_result.get(
                         'premarket_change_pct',

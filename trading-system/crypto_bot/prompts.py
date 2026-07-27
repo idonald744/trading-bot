@@ -1,5 +1,6 @@
 def get_crypto_prompt(matrix: dict, sentiment: dict, rag: dict, risk: dict) -> str:
     """Mean reversion prompt for crypto trading"""
+    fundamentals = matrix.get('fundamentals', {})
     divergence = sentiment.get('divergence', {})
     if divergence.get('detected'):
         divergence_line = f"CONFLICT — {divergence.get('reason', 'sources disagree')}"
@@ -18,6 +19,8 @@ TRADE SETUP:
 - RSI: {matrix['market_metrics']['rsi_14']}
 - MACD: {matrix['market_metrics']['macd_line']}
 - Volume Spike: {matrix['market_metrics']['volume_spike']}
+- Market Cap: ${fundamentals.get('market_cap', 'Unknown')}
+- Market Cap Rank: #{fundamentals.get('market_cap_rank', 'Unknown')}
 
 SENTIMENT ANALYSIS:
 - Score: {sentiment.get('sentiment_score', 5)}/10

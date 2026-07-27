@@ -6,6 +6,8 @@ import ccxt.async_support as ccxt
 import aiohttp
 from datetime import datetime
 
+from crypto_bot.market_data import get_market_caps
+
 # ==========================================
 # SCANNER CONFIGURATION
 # ==========================================
@@ -104,9 +106,15 @@ async def run_market_scanner():
 
         print(f"[*] Analyzing {len(volatile_tasks)} volatile pairs...")
 
-        # Step 4 — Run all indicator calculations in parallel
-        results = await asyncio.gather(*volatile_tasks)
+        # Step 4 — Run indicator calculations and the CoinGecko market-cap
+        # lookup concurrently (one batched call, whole top-50 universe)
+        results, market_caps = await asyncio.gather(
+            asyncio.gather(*volatile_tasks),
+            get_market_caps(session, [t['symbol'] for t in top_pairs]),
+        )
         watchlist = [r for r in results if r is not None]
+        for entry in watchlist:
+            entry['fundamentals'] = market_caps.get(entry['symbol'], {})
 
         print("\n🎯 =============================================")
         print(f"   WATCHLIST: {len(watchlist)} high-conviction targets")

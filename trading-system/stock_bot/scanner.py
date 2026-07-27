@@ -21,6 +21,7 @@ PRICE_MIN = 5.0              # Minimum stock price
 PRICE_MAX = 1000.0
 PREMARKET_CHANGE_MIN = 2.0   # Minimum move %
 MAX_WORKERS = 8              # Concurrent yfinance/NewsAPI requests — tune if throttled
+FUNDAMENTALS_CACHE_TTL_HOURS = 24  # market cap/float don't meaningfully move intraday
 
 # High momentum universe — mix of large cap and momentum stocks
 STOCK_UNIVERSE = [
@@ -33,6 +34,9 @@ STOCK_UNIVERSE = [
     'MARA', 'RIOT', 'CLSK', 'BITF', 'HUT',
     'SMCI', 'CRWD', 'PANW', 'ZS', 'OKTA'
 ]
+
+# {symbol: {"data": {...}, "fetched_at": datetime}} — see fetch_stock_fundamentals
+_fundamentals_cache = {}
 
 def is_market_open() -> bool:
     """Check if US stock market is currently open EST"""
@@ -74,8 +78,6 @@ def get_catalyst(symbol: str) -> dict:
                 'type': 'Unknown',
                 'strength': 'weak',
                 'headline': 'No recent news found',
-                'float_shares': 'Unknown',
-                'short_interest_pct': 'Unknown',
                 'catalyst_float_ratio': 'Cannot assess'
             }
 
@@ -104,8 +106,6 @@ def get_catalyst(symbol: str) -> dict:
             'type': catalyst_type,
             'strength': strength,
             'headline': headline[:100],
-            'float_shares': 'Unknown',
-            'short_interest_pct': 'Unknown',
             'catalyst_float_ratio': f'{catalyst_type} detected'
         }
 
@@ -114,8 +114,6 @@ def get_catalyst(symbol: str) -> dict:
             'type': 'Error',
             'strength': 'unknown',
             'headline': str(e)[:50],
-            'float_shares': 'Unknown',
-            'short_interest_pct': 'Unknown',
             'catalyst_float_ratio': 'Cannot assess'
         }
 
@@ -124,6 +122,56 @@ def calculate_vwap(df: pd.DataFrame) -> pd.Series:
     typical_price = (df['High'] + df['Low'] + df['Close']) / 3
     vwap = (typical_price * df['Volume']).cumsum() / df['Volume'].cumsum()
     return vwap
+
+def _fetch_one_fundamentals(symbol: str) -> dict:
+    """Static fundamentals for one symbol via yfinance's full .info call —
+    the only source that carries floatShares/shortPercentOfFloat; fast_info
+    has marketCap but not float data."""
+    try:
+        info = yf.Ticker(symbol).info
+        short_pct_raw = info.get('shortPercentOfFloat')
+        return {
+            'market_cap': info.get('marketCap'),
+            'float_shares': info.get('floatShares'),
+            'shares_outstanding': info.get('sharesOutstanding'),
+            'short_interest_pct': round(short_pct_raw * 100, 2) if short_pct_raw is not None else None,
+        }
+    except Exception:
+        return {
+            'market_cap': None,
+            'float_shares': None,
+            'shares_outstanding': None,
+            'short_interest_pct': None,
+        }
+
+def fetch_stock_fundamentals(symbols: list) -> dict:
+    """
+    Market cap / float / shares outstanding / short interest, cached with a
+    24h TTL since these don't meaningfully change intraday — no reason to
+    pay a yfinance .info call per symbol on every 5-minute scan cycle.
+    Only cache misses/stale entries hit the network, concurrently.
+    """
+    now = datetime.now()
+    result = {}
+    to_fetch = []
+
+    for symbol in symbols:
+        cached = _fundamentals_cache.get(symbol)
+        if cached and (now - cached['fetched_at']) < timedelta(hours=FUNDAMENTALS_CACHE_TTL_HOURS):
+            result[symbol] = cached['data']
+        else:
+            to_fetch.append(symbol)
+
+    if to_fetch:
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+            futures = {pool.submit(_fetch_one_fundamentals, symbol): symbol for symbol in to_fetch}
+            for future in as_completed(futures):
+                symbol = futures[future]
+                data = future.result()
+                _fundamentals_cache[symbol] = {'data': data, 'fetched_at': now}
+                result[symbol] = data
+
+    return result
 
 def fetch_universe_prefilter(symbols: list) -> dict:
     """
@@ -310,7 +358,7 @@ def run_stock_scanner() -> list:
                 if result:
                     results.append(result)
 
-    # Stage 3 — catalyst enrichment, concurrent, survivors only
+    # Stage 3 — catalyst + fundamentals enrichment, concurrent, survivors only
     if results:
         with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
             catalyst_futures = {
@@ -319,6 +367,10 @@ def run_stock_scanner() -> list:
             for future in as_completed(catalyst_futures):
                 r = catalyst_futures[future]
                 r['catalyst'] = future.result()
+
+        fundamentals = fetch_stock_fundamentals([r['symbol'] for r in results])
+        for r in results:
+            r['fundamentals'] = fundamentals.get(r['symbol'], {})
 
         for r in results:
             print(f"  ✅ {r['symbol']}: ${r['current_price']} | "

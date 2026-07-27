@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.state_matrix import build_state_matrix
 from crypto_bot.scanner import run_market_scanner
 from crypto_bot.execution import execute_paper_trade
+from crypto_bot.market_data import get_cached_fundamentals
 
 
 class CryptoAdapter:
@@ -87,6 +88,7 @@ class CryptoAdapter:
             session_id=f"trigger_{int(candle_ts / 1000)}",
             timestamp=datetime.fromtimestamp(
                 candle_ts / 1000).strftime('%Y-%m-%d %H:%M:%S'),
+            extras={'fundamentals': get_cached_fundamentals(symbol)},
         )
 
     def execute(self, decision: str, state_matrix: dict) -> dict:
