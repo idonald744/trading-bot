@@ -56,6 +56,7 @@ TEXTBOOK VALIDATION:
 
 RISK ASSESSMENT:
 - Approved: {risk.get('approved', False)}
+- Asset Tier: {risk.get('asset_tier', 'unknown').upper()} ({risk.get('tier_reason', 'no classification data')})
 - Entry: ${matrix['quant_trigger']['price_at_trigger']}
 - Structural Stop: ${risk['position']['stop_loss_price'] if risk.get('position') else 'N/A'}
 - Target 1: ${risk['position']['take_profit_price'] if risk.get('position') else 'N/A'}

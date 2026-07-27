@@ -39,6 +39,7 @@ TEXTBOOK VALIDATION:
 RISK ASSESSMENT:
 - Approved: {risk.get('approved', False)}
 - Reason: {risk.get('reason', 'Unknown')}
+- Asset Tier: {risk.get('asset_tier', 'unknown').upper()} ({risk.get('tier_reason', 'no classification data')})
 - Position Size: ${risk['position']['position_usd'] if risk.get('position') else 'N/A'}
 - Stop Loss: ${risk['position']['stop_loss_price'] if risk.get('position') else 'N/A'}
 - Take Profit: ${risk['position']['take_profit_price'] if risk.get('position') else 'N/A'}
