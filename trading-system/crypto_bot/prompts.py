@@ -1,5 +1,13 @@
 def get_crypto_prompt(matrix: dict, sentiment: dict, rag: dict, risk: dict) -> str:
     """Mean reversion prompt for crypto trading"""
+    divergence = sentiment.get('divergence', {})
+    if divergence.get('detected'):
+        divergence_line = f"CONFLICT — {divergence.get('reason', 'sources disagree')}"
+    elif sentiment.get('sources_analyzed', 1) > 1:
+        divergence_line = "None — sources aligned"
+    else:
+        divergence_line = "N/A — single source"
+
     return f"""You are a senior risk officer for a crypto trading firm.
 Review this trade setup and make a final decision.
 
@@ -16,6 +24,7 @@ SENTIMENT ANALYSIS:
 - Smart Money: {sentiment.get('smart_money_signal', 'neutral')}
 - Retail Signal: {sentiment.get('retail_signal', 'neutral')}
 - Trap Warning: {sentiment.get('trap_warning', False)}
+- Source Divergence: {divergence_line}
 - Key Narratives: {sentiment.get('key_narratives', [])[:2]}
 
 TEXTBOOK VALIDATION:

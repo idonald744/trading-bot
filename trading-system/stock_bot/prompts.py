@@ -3,7 +3,15 @@ def get_stock_prompt(matrix: dict, sentiment: dict, rag: dict, risk: dict) -> st
     
     catalyst = matrix.get('catalyst', {})
     momentum = matrix.get('momentum_metrics', {})
-    
+
+    divergence = sentiment.get('divergence', {})
+    if divergence.get('detected'):
+        divergence_line = f"CONFLICT — {divergence.get('reason', 'sources disagree')}"
+    elif sentiment.get('sources_analyzed', 1) > 1:
+        divergence_line = "None — sources aligned"
+    else:
+        divergence_line = "N/A — single source"
+
     return f"""You are a senior risk officer for a momentum day trading desk.
 Review this stock setup and make a final decision.
 
@@ -35,6 +43,7 @@ SENTIMENT ANALYSIS:
 - Score: {sentiment.get('sentiment_score', 5)}/10
 - Smart Money Signal: {sentiment.get('smart_money_signal', 'neutral')}
 - Catalyst Quality: {sentiment.get('catalyst_quality', 'unknown')}
+- Source Divergence: {divergence_line}
 - Key Narratives: {sentiment.get('key_narratives', [])[:2]}
 
 TEXTBOOK VALIDATION:

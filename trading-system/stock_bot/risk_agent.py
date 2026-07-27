@@ -12,6 +12,7 @@ MAX_TRADES_PER_DAY = 5        # Maximum 5 trades per day
 MIN_VOLUME_RATIO = 3.0        # Minimum 3x average volume
 MIN_CATALYST_STRENGTH = 'medium'  # Reject weak catalyst trades
 MIN_REWARD_RISK = 3.0         # Minimum 3:1 reward/risk ratio
+MIN_CONFIDENCE = 'medium'     # Minimum sentiment confidence required (parity with core/agents/risk_agent.py Rule 2)
 
 PORTFOLIO_BALANCE = 1000.0
 trades_today = 0
@@ -105,6 +106,7 @@ def evaluate_stock_risk(state_matrix: dict) -> dict:
 
     trap_warning = sentiment.get('trap_warning', False)
     sentiment_score = sentiment.get('sentiment_score', 5)
+    confidence = sentiment.get('confidence', 'low')
     catalyst_strength = catalyst.get('strength', 'unknown')
     volume_ratio = momentum.get('volume_ratio', 0)
     above_vwap = momentum.get('above_vwap', False)
@@ -135,7 +137,15 @@ def evaluate_stock_risk(state_matrix: dict) -> dict:
             'position': None
         }
 
-    # Rule 4: Catalyst strength check
+    # Rule 4: Sentiment confidence must be medium or high
+    if confidence == 'low':
+        return {
+            'approved': False,
+            'reason': 'Sentiment confidence too low — insufficient data',
+            'position': None
+        }
+
+    # Rule 5: Catalyst strength check
     catalyst_rank = CATALYST_STRENGTH_RANK.get(catalyst_strength, 0)
     min_rank = CATALYST_STRENGTH_RANK.get(MIN_CATALYST_STRENGTH, 2)
     if catalyst_rank < min_rank:
@@ -145,7 +155,7 @@ def evaluate_stock_risk(state_matrix: dict) -> dict:
             'position': None
         }
 
-    # Rule 5: Volume confirmation
+    # Rule 6: Volume confirmation
     if volume_ratio < MIN_VOLUME_RATIO:
         return {
             'approved': False,
@@ -153,7 +163,7 @@ def evaluate_stock_risk(state_matrix: dict) -> dict:
             'position': None
         }
 
-    # Rule 6: Must be above VWAP for buys
+    # Rule 7: Must be above VWAP for buys
     if direction == 'BUY_SIGNAL' and not above_vwap:
         return {
             'approved': False,
@@ -161,7 +171,7 @@ def evaluate_stock_risk(state_matrix: dict) -> dict:
             'position': None
         }
 
-    # Rule 7: ORB must be confirmed
+    # Rule 8: ORB must be confirmed
     if not orb_confirmed:
         return {
             'approved': False,
@@ -169,7 +179,7 @@ def evaluate_stock_risk(state_matrix: dict) -> dict:
             'position': None
         }
 
-    # Rule 8: Sentiment boundaries
+    # Rule 9: Sentiment boundaries
     if sentiment_score > 9:
         return {
             'approved': False,
