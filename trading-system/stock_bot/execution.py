@@ -3,6 +3,7 @@ import sys
 import json
 from datetime import datetime
 from dotenv import load_dotenv
+import yfinance as yf
 
 from stock_bot import moomoo_client
 
@@ -178,6 +179,70 @@ def save_paper_trades():
             },
             'trades': paper_trades
         }, f, indent=2)
+
+def get_current_price(ticker: str) -> float:
+    """Lightweight last-price lookup for position monitoring — reuses the
+    same yfinance client the scanner uses for prices, via fast_info instead
+    of a full intraday history() call."""
+    return float(yf.Ticker(ticker).fast_info['last_price'])
+
+
+def check_exit(trade: dict, current_price: float) -> str:
+    """Stock positions are long-only today (direction is hardcoded to
+    BUY_SIGNAL in stock_bot/adapter.py). target_2 is informational only in
+    phase 1 — there's no partial-exit/trailing-stop logic yet, so only
+    stop_loss and target_1 are treated as hard exit levels.
+
+    NOTE: this is estimated-fill detection from our own polled price feed,
+    not a broker-confirmed fill — that distinction (reconciliation against
+    exchange/broker truth) is a deliberate later phase, not implemented
+    here. See docs/blueprint-reference.md #2.
+    """
+    if current_price <= trade['stop_loss']:
+        return 'stop_loss'
+    if current_price >= trade['target_1']:
+        return 'target_1'
+    return None
+
+
+def close_trade(trade: dict, exit_price: float, reason: str) -> None:
+    """Mutate an open trade record into a closed one and persist. Estimated
+    fill only — see check_exit's docstring."""
+    global paper_balance
+
+    pnl_usd = (exit_price - trade['price']) * trade['quantity']
+    pnl_pct = round((pnl_usd / trade['position_usd']) * 100, 2) if trade.get('position_usd') else 0.0
+
+    trade['status'] = 'CLOSED'
+    trade['close_reason'] = reason
+    trade['exit_price'] = round(exit_price, 4)
+    trade['close_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    trade['pnl_usd'] = round(pnl_usd, 2)
+    trade['pnl_pct'] = pnl_pct
+    trade['fill_type'] = 'estimated'  # our own price feed, not broker-confirmed
+
+    paper_balance += pnl_usd
+    save_paper_trades()
+
+    try:
+        print(f"""
+    🔒 STOCK PAPER TRADE CLOSED ({reason}):
+    ├── Ticker:    {trade['ticker']}
+    ├── Exit:      ${exit_price:,.4f}
+    ├── P&L:       ${pnl_usd:,.2f} ({pnl_pct}%)
+    └── Balance:   ${paper_balance:.2f}
+    """)
+    except Exception:
+        pass  # display-only; the trade is already durably logged above
+
+
+def check_open_positions() -> None:
+    """Called on its own interval by core/position_monitor.py, independent
+    of the scanner cadence — see position_check_interval_seconds in
+    stock_bot/adapter.py."""
+    from core.position_monitor import monitor_open_positions
+    monitor_open_positions(paper_trades, get_current_price, check_exit, close_trade)
+
 
 def view_performance():
     """Print paper trading performance"""
