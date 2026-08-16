@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.state_matrix import build_state_matrix
 from stock_bot.scanner import run_stock_scanner, is_market_open, is_orb_ready
-from stock_bot.execution import execute_paper_trade
+from stock_bot.execution import execute_paper_trade, check_open_positions
 
 
 class StockAdapter:
@@ -21,6 +21,7 @@ class StockAdapter:
     mode = 'poll'
 
     scan_interval_seconds = 300  # Scan every 5 minutes during market hours
+    position_check_interval_seconds = 75  # cheap poll for open-position exits, independent of scan cadence
     max_setups_per_scan = 3      # Max 3 trades per scan
     indicator_setup = 'ORB + VWAP + Volume Momentum'
     timeframe = '1m'
@@ -73,3 +74,9 @@ class StockAdapter:
 
     def execute(self, decision: str, state_matrix: dict) -> dict:
         return execute_paper_trade(decision, state_matrix)
+
+    def positions_checkable(self) -> bool:
+        return is_market_open()
+
+    def check_open_positions(self) -> None:
+        check_open_positions()

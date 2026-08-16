@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.state_matrix import build_state_matrix
 from crypto_bot.scanner import run_market_scanner
-from crypto_bot.execution import execute_paper_trade
+from crypto_bot.execution import execute_paper_trade, check_open_positions
 from crypto_bot.market_data import get_cached_fundamentals
 
 
@@ -30,6 +30,7 @@ class CryptoAdapter:
     rsi_oversold = 30
     rsi_overbought = 70
     scan_interval_seconds = 15 * 60
+    position_check_interval_seconds = 45  # cheap poll for open-position exits, independent of scan cadence
     require_volatility = True  # Only trade during high volatility periods
     indicator_setup = 'RSI + MACD + Bollinger Confluence'
     default_watchlist = ['BTC/USD', 'ETH/USD', 'SOL/USD']
@@ -93,3 +94,9 @@ class CryptoAdapter:
 
     def execute(self, decision: str, state_matrix: dict) -> dict:
         return execute_paper_trade(decision, state_matrix)
+
+    def positions_checkable(self) -> bool:
+        return True  # crypto trades 24/7
+
+    def check_open_positions(self) -> None:
+        check_open_positions()

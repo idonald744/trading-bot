@@ -23,6 +23,7 @@ import pandas as pd
 import pandas_ta as ta
 
 from core.orchestrator import route_to_orchestrator
+from core.position_monitor import run_position_monitor_loop
 
 
 # ==========================================
@@ -220,7 +221,5 @@ async def run_stream_loop(adapter):
 # ENTRY
 # ==========================================
 async def run(adapter):
-    if adapter.mode == 'stream':
-        await run_stream_loop(adapter)
-    else:
-        await run_poll_loop(adapter)
+    main_loop = run_stream_loop(adapter) if adapter.mode == 'stream' else run_poll_loop(adapter)
+    await asyncio.gather(main_loop, run_position_monitor_loop(adapter))
