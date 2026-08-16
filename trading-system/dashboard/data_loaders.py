@@ -71,7 +71,10 @@ def load_triggers() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def load_paper_trades(path: str, market_label: str) -> pd.DataFrame:
+def load_market_paper_trades(path: str, market_label: str) -> tuple:
+    """Returns (trades_df, summary_dict) for one market's log file — a single
+    read serves both the trades table and the balance metric, instead of
+    discarding 'summary' the way the old per-market loader did."""
     data = _safe_load_json(path, {'summary': {}, 'trades': []})
     trades = data.get('trades', [])
     if not isinstance(trades, list):
@@ -79,12 +82,16 @@ def load_paper_trades(path: str, market_label: str) -> pd.DataFrame:
     df = pd.DataFrame(trades)
     if not df.empty:
         df['market'] = market_label
-    return df
+    return df, data.get('summary', {}) or {}
 
 
-def load_all_paper_trades() -> pd.DataFrame:
-    crypto_df = load_paper_trades(CRYPTO_TRADES_LOG, 'crypto')
-    stock_df = load_paper_trades(STOCK_TRADES_LOG, 'stock')
-    if crypto_df.empty and stock_df.empty:
-        return pd.DataFrame()
-    return pd.concat([crypto_df, stock_df], ignore_index=True)
+def load_all_paper_trades() -> tuple:
+    """Returns (combined trades_df, {'crypto': summary, 'stock': summary})."""
+    crypto_df, crypto_summary = load_market_paper_trades(CRYPTO_TRADES_LOG, 'crypto')
+    stock_df, stock_summary = load_market_paper_trades(STOCK_TRADES_LOG, 'stock')
+    trades_df = (
+        pd.DataFrame() if crypto_df.empty and stock_df.empty
+        else pd.concat([crypto_df, stock_df], ignore_index=True)
+    )
+    balances = {'crypto': crypto_summary, 'stock': stock_summary}
+    return trades_df, balances

@@ -14,7 +14,7 @@ if st.sidebar.button("Refresh"):
     st.rerun()
 
 triggers_df = load_triggers()
-trades_df = load_all_paper_trades()
+trades_df, balances = load_all_paper_trades()
 
 tab_overview, tab_decisions, tab_trades = st.tabs(
     ["Overview", "Decision Trail", "Paper Trades"]
@@ -27,4 +27,4 @@ with tab_decisions:
     render_decision_trail(triggers_df)
 
 with tab_trades:
-    render_paper_trades(trades_df)
+    render_paper_trades(trades_df, balances)

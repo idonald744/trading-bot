@@ -55,13 +55,38 @@ def render_decision_trail(triggers_df: pd.DataFrame):
     st.json(filtered.iloc[selected_idx]['_raw'])
 
 
-def render_paper_trades(trades_df: pd.DataFrame):
+def _paper_trade_row_style(row: pd.Series) -> list:
+    """CLOSED rows shaded green (win) or red (loss); OPEN rows unshaded."""
+    if row.get('status') == 'CLOSED':
+        pnl = row.get('pnl_usd')
+        if pnl is not None and pd.notna(pnl):
+            if pnl > 0:
+                return ['background-color: #c6efce; color: #006100'] * len(row)
+            return ['background-color: #ffc7ce; color: #9c0006'] * len(row)
+    return [''] * len(row)
+
+
+def render_paper_trades(trades_df: pd.DataFrame, balances: dict):
     st.caption(
-        "Status will always read 'OPEN' and balance figures reflect the "
-        "starting paper balance only — position-closing and P&L tracking "
-        "aren't implemented in the bots yet, so this view can't show "
-        "realized gains/losses or a live balance."
+        "Status reflects real trade state. core/position_monitor.py polls open "
+        "positions on their own cadence (independent of scan activity) and "
+        "closes them with real P&L when a stop/target is crossed — CLOSED rows "
+        "below are shaded green (win) or red (loss); OPEN rows are unshaded."
     )
+
+    col1, col2 = st.columns(2)
+    for col, market_label, display_name in [
+        (col1, 'crypto', 'Crypto balance'),
+        (col2, 'stock', 'Stock balance'),
+    ]:
+        summary = balances.get(market_label) or {}
+        current_balance = summary.get('current_balance')
+        if current_balance is None:
+            col.metric(display_name, "—")
+        else:
+            return_pct = summary.get('return_pct')
+            delta = f"{return_pct:+.2f}%" if return_pct is not None else None
+            col.metric(display_name, f"${current_balance:,.2f}", delta)
 
     if trades_df.empty:
         st.info("No paper trades logged yet.")
@@ -75,4 +100,7 @@ def render_paper_trades(trades_df: pd.DataFrame):
     if 'timestamp' in filtered.columns:
         filtered = filtered.sort_values('timestamp', ascending=False)
 
-    st.dataframe(filtered, use_container_width=True)
+    if 'status' in filtered.columns:
+        st.dataframe(filtered.style.apply(_paper_trade_row_style, axis=1), use_container_width=True)
+    else:
+        st.dataframe(filtered, use_container_width=True)
