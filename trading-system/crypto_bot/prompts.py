@@ -1,3 +1,34 @@
+def _setup_section(matrix: dict, fundamentals: dict) -> str:
+    """Branches on signal_source: buzz-sourced triggers have no RSI/MACD
+    reading (they weren't found by the technical scanner) and get a
+    social-momentum framing instead of the technical one."""
+    if matrix.get('signal_source') == 'buzz':
+        buzz = matrix.get('buzz_metrics', {})
+        return f"""TRADE SETUP — SOCIAL-MOMENTUM-DRIVEN (no technical confirmation):
+- Ticker: {matrix['ticker']}
+- Direction: {matrix['quant_trigger']['direction']}
+- Price: ${matrix['quant_trigger']['price_at_trigger']}
+- This setup was surfaced by a social mention-velocity spike, NOT by RSI/MACD/
+  Bollinger confluence — there is no technical indicator confirmation behind it.
+- Mention count: {buzz.get('mention_count', 'unknown')} (baseline: {buzz.get('baseline', 'unknown')})
+- Trigger type: {buzz.get('trigger_type', 'unknown')}
+- Reason: {buzz.get('reason', 'unknown')}
+- Source(s): {buzz.get('sources', [])}
+- Notes: {buzz.get('notes', [])}
+- Market Cap: ${fundamentals.get('market_cap', 'Unknown')}
+- Market Cap Rank: #{fundamentals.get('market_cap_rank', 'Unknown')}"""
+
+    return f"""TRADE SETUP — TECHNICALLY-CONFIRMED:
+- Ticker: {matrix['ticker']}
+- Direction: {matrix['quant_trigger']['direction']}
+- Price: ${matrix['quant_trigger']['price_at_trigger']}
+- RSI: {matrix['market_metrics']['rsi_14']}
+- MACD: {matrix['market_metrics']['macd_line']}
+- Volume Spike: {matrix['market_metrics']['volume_spike']}
+- Market Cap: ${fundamentals.get('market_cap', 'Unknown')}
+- Market Cap Rank: #{fundamentals.get('market_cap_rank', 'Unknown')}"""
+
+
 def get_crypto_prompt(matrix: dict, sentiment: dict, rag: dict, risk: dict) -> str:
     """Mean reversion prompt for crypto trading"""
     fundamentals = matrix.get('fundamentals', {})
@@ -12,15 +43,7 @@ def get_crypto_prompt(matrix: dict, sentiment: dict, rag: dict, risk: dict) -> s
     return f"""You are a senior risk officer for a crypto trading firm.
 Review this trade setup and make a final decision.
 
-TRADE SETUP:
-- Ticker: {matrix['ticker']}
-- Direction: {matrix['quant_trigger']['direction']}
-- Price: ${matrix['quant_trigger']['price_at_trigger']}
-- RSI: {matrix['market_metrics']['rsi_14']}
-- MACD: {matrix['market_metrics']['macd_line']}
-- Volume Spike: {matrix['market_metrics']['volume_spike']}
-- Market Cap: ${fundamentals.get('market_cap', 'Unknown')}
-- Market Cap Rank: #{fundamentals.get('market_cap_rank', 'Unknown')}
+{_setup_section(matrix, fundamentals)}
 
 SENTIMENT ANALYSIS:
 - Score: {sentiment.get('sentiment_score', 5)}/10

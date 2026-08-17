@@ -222,4 +222,10 @@ async def run_stream_loop(adapter):
 # ==========================================
 async def run(adapter):
     main_loop = run_stream_loop(adapter) if adapter.mode == 'stream' else run_poll_loop(adapter)
-    await asyncio.gather(main_loop, run_position_monitor_loop(adapter))
+    tasks = [main_loop, run_position_monitor_loop(adapter)]
+
+    if getattr(adapter, 'buzz_enabled', False):
+        from core.buzz.buzz_loop import run_buzz_loop
+        tasks.append(run_buzz_loop(adapter))
+
+    await asyncio.gather(*tasks)

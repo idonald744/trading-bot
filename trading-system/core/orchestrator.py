@@ -50,7 +50,7 @@ def rag_node(state: TradingState) -> TradingState:
     rag = query_textbooks(
         setup=matrix['quant_trigger']['indicator_setup'],
         ticker=matrix['ticker'],
-        rsi=matrix['market_metrics']['rsi_14'],
+        rsi=matrix['market_metrics'].get('rsi_14'),
         direction=matrix['quant_trigger']['direction']
     )
     matrix['rag_validation'] = rag
@@ -135,7 +135,15 @@ def should_continue_after_risk(state: TradingState) -> str:
             f"EXECUTE: FALSE\nREASON: {state['risk_result']['reason']}"
         )
         return "abort"
-    if not state['rag_result']['validated']:
+
+    # RAG validation is a hard gate everywhere except buzz-sourced triggers:
+    # the textbook corpus (Murphy/Douglas/Elder/Weinstein/O'Neil) has no
+    # coverage of social-mention-velocity as a methodology, so it would
+    # reliably fail to validate a setup it structurally can't recognize.
+    # The RAG query still runs (see rag_node) and its passages still reach
+    # Claude's brief — it's informational for buzz, not a veto.
+    is_buzz = state['state_matrix'].get('signal_source') == 'buzz'
+    if not is_buzz and not state['rag_result']['validated']:
         state['abort_reason'] = "Textbook validation failed"
         state['final_decision'] = (
             "EXECUTE: FALSE\nREASON: Setup not confirmed by trading literature"

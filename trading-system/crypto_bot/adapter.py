@@ -24,6 +24,7 @@ class CryptoAdapter:
     name = 'crypto'
     prompt_type = 'crypto'
     mode = 'stream'
+    buzz_enabled = True  # runs core/buzz/buzz_loop.py alongside the stream loop
 
     timeframe = '15m'
     max_candles = 100

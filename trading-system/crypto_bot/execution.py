@@ -146,7 +146,23 @@ def execute_paper_trade(decision: str, state_matrix: dict) -> dict:
     ticker = state_matrix['ticker']
     direction = state_matrix['quant_trigger']['direction']
     price = state_matrix['quant_trigger']['price_at_trigger']
-    position = calculate_position(price, paper_balance, direction)
+
+    # Tier-aware sizing from the risk agent (core/agents/risk_agent.py) is
+    # authoritative when present — this is what makes blue_chip/established/
+    # speculative sizing actually reach a trade instead of staying
+    # display-only in the Claude brief. Falls back to the flat-rate position
+    # only if evaluate_risk() wasn't run ahead of this call (e.g. a direct/
+    # test invocation bypassing the orchestrator).
+    risk_position = state_matrix.get('risk_evaluation', {}).get('position')
+    if risk_position:
+        position = {
+            'position_usd': risk_position['position_usd'],
+            'quantity': risk_position['quantity'],
+            'stop_loss': risk_position['stop_loss_price'],
+            'take_profit': risk_position['take_profit_price'],
+        }
+    else:
+        position = calculate_position(price, paper_balance, direction)
 
     trade_record = {
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),

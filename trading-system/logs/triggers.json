@@ -156,5 +156,105 @@
       "target_gain_usd": 0.6
     },
     "final_decision": "EXECUTE: TRUE"
+  },
+  {
+    "session_id": "buzz_1786987415",
+    "timestamp": "2026-08-17 11:23:35",
+    "ticker": "SOL",
+    "quant_trigger": {
+      "direction": "BUY_SIGNAL",
+      "indicator_setup": "Social Momentum Spike (buzz detection)",
+      "timeframe": "n/a",
+      "price_at_trigger": 76.05
+    },
+    "market_metrics": {},
+    "consensus": {
+      "status": "AWAITING_AGENT_EVALUATION"
+    },
+    "fundamentals": {
+      "market_cap": 44288692964,
+      "total_volume": 1321418031,
+      "circulating_supply": 582896094.6167527,
+      "market_cap_rank": 7
+    },
+    "signal_source": "buzz",
+    "buzz_metrics": {
+      "mention_count": 85,
+      "baseline": 12.0,
+      "trigger_type": "relative",
+      "reason": "SYNTHETIC: manually forced for pipeline verification, not a real detected spike (85 vs 12.0 baseline, 7.1x)",
+      "sources": [
+        "synthetic-test"
+      ],
+      "notes": [
+        "SYNTHETIC TEST TRIGGER \u2014 manually constructed to verify orchestrator plumbing; no real X/Grok/Reddit spike behind this."
+      ]
+    },
+    "prompt_type": "crypto",
+    "sentiment": {
+      "sentiment_score": 6,
+      "smart_money_signal": "neutral",
+      "retail_signal": "neutral",
+      "key_narratives": [
+        "Gemini 3.7 Flash Review: Google's Cheap Model Isn\u2019t Dumb Anymore",
+        "XCancel\u2009\u2014\u2009An Unofficial Twitter/X Mirror",
+        "memecoin season on Solana"
+      ],
+      "trap_warning": false,
+      "trap_reason": null,
+      "confidence": "high",
+      "headlines_analyzed": 239,
+      "sources_analyzed": 2,
+      "divergence": {
+        "detected": false,
+        "polarity_conflict": false,
+        "score_gap": 1,
+        "reason": null,
+        "newsapi": {
+          "score": 6,
+          "regime": "neutral",
+          "confidence": "high"
+        },
+        "grok": {
+          "score": 7,
+          "regime": "neutral",
+          "confidence": "medium"
+        }
+      }
+    },
+    "rag_validation": {
+      "validated": true,
+      "methodology": "employed, the signals could be used as a disciplined way to keep the trader on the right side of the major trend. No short positions would be taken as long as the computer trend was up. No longs would be taken in a computer downtrend. (This would be a sim\u00ac ple way for fundamentally oriented traders to use a technical device as a filter or trigger on their own trading ideas.) Trend direction can be",
+      "supporting_passages": [
+        "Rules for Interpretation As a general rule, when the oscillator reaches an extreme value in either the upper or lower end of the band, this suggests that the current price move may have gone too far too fast and is due for a correction or consolidation of some type. As another general rule, the trader should be buying when the oscillator line is in the lower end of the band and selling in the uppe",
+        "trading. Rather it is a method whereby aggressive investors can uncover potential big winners to ride for a major advance. In football, a player who is a triple threat can run, pass, and kick. It is very rare to find someone who is outstanding at all three. This pattern also occurs only occasionally with stocks, as it requires the unlikely to happen\u2014three different favorable signals must be flashe"
+      ],
+      "sources": [
+        "weinstein",
+        "murphy"
+      ],
+      "bullish_signals": 2,
+      "bearish_signals": 2,
+      "recommendation": "PROCEED"
+    },
+    "risk_evaluation": {
+      "approved": true,
+      "reason": "All risk rules passed (tier: blue_chip)",
+      "position": {
+        "position_usd": 20.0,
+        "quantity": 0.262985,
+        "entry_price": 76.05,
+        "stop_loss_price": 74.9093,
+        "take_profit_price": 78.3315,
+        "risk_usd": 0.3,
+        "reward_usd": 0.6
+      },
+      "risk_reward_ratio": "2.0:1",
+      "max_loss_usd": 0.3,
+      "target_gain_usd": 0.6,
+      "asset_tier": "blue_chip",
+      "tier_reason": "market cap $44,288,692,964"
+    },
+    "final_decision": "EXECUTE: FALSE\nREASON: The trigger is explicitly synthetic/manually constructed with no real social spike, no technical confirmation, and neutral sentiment across all signals \u2014 executing on fabricated test data would violate fundamental trade integrity standards regardless of risk parameters passing."
   }
 ]

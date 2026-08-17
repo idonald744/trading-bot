@@ -18,16 +18,21 @@ def get_embed_model():
 def get_vecs_client():
     return vecs.create_client(os.getenv("SUPABASE_DB_URL"))
 
-def query_textbooks(setup: str, ticker: str, rsi: float, direction: str) -> dict:
+def query_textbooks(setup: str, ticker: str, rsi: float | None, direction: str) -> dict:
     """
     Query the trading knowledge base for methodology
     matching the current chart setup
+
+    rsi is None for buzz-sourced setups (no technical indicator reading
+    behind the trigger) — the RSI line is simply omitted from the query
+    rather than defaulted to a fabricated number.
     """
+    rsi_line = f"RSI is at {rsi:.1f}." if rsi is not None else ""
     query = f"""
     {direction} signal on {ticker}.
-    RSI is at {rsi:.1f}.
+    {rsi_line}
     Setup: {setup}.
-    What do professional trading methodologies say about 
+    What do professional trading methodologies say about
     this specific setup? Should we enter this trade?
     What are the key risk management rules?
     """

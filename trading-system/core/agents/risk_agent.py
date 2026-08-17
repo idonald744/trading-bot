@@ -117,7 +117,8 @@ def evaluate_risk(state_matrix: dict) -> dict:
     trap_warning = sentiment.get('trap_warning', False)
     confidence = sentiment.get('confidence', 'low')
     volume_spike = state_matrix['market_metrics'].get('volume_spike', False)
-    rsi = state_matrix['market_metrics']['rsi_14']
+    signal_source = state_matrix.get('signal_source', 'scanner')
+    rsi = state_matrix['market_metrics'].get('rsi_14')
 
     # Rule 1: pegged assets are never traded — the only way one clears the
     # scanner's 2% move filter is a depeg in progress
@@ -174,22 +175,25 @@ def evaluate_risk(state_matrix: dict) -> dict:
             "asset_tier": tier, "tier_reason": tier_reason
         }
 
-    # Rule 6: RSI extreme check
-    if direction == "BUY_SIGNAL" and rsi > 50:
-        return {
-            "approved": False,
-            "reason": f"RSI at {rsi:.1f} — not oversold enough for high-probability buy",
-            "position": None,
-            "asset_tier": tier, "tier_reason": tier_reason
-        }
+    # Rule 6: RSI extreme check — skipped for buzz-sourced triggers, which
+    # fire on social mention velocity rather than a technical RSI setup and
+    # have no RSI reading to check in the first place.
+    if signal_source != 'buzz':
+        if direction == "BUY_SIGNAL" and rsi > 50:
+            return {
+                "approved": False,
+                "reason": f"RSI at {rsi:.1f} — not oversold enough for high-probability buy",
+                "position": None,
+                "asset_tier": tier, "tier_reason": tier_reason
+            }
 
-    if direction == "SELL_SIGNAL" and rsi < 50:
-        return {
-            "approved": False,
-            "reason": f"RSI at {rsi:.1f} — not overbought enough for high-probability sell",
-            "position": None,
-            "asset_tier": tier, "tier_reason": tier_reason
-        }
+        if direction == "SELL_SIGNAL" and rsi < 50:
+            return {
+                "approved": False,
+                "reason": f"RSI at {rsi:.1f} — not overbought enough for high-probability sell",
+                "position": None,
+                "asset_tier": tier, "tier_reason": tier_reason
+            }
 
     # All rules passed — size the position by asset tier
     profile = TIER_RISK_PROFILES[tier]
@@ -256,6 +260,21 @@ if __name__ == "__main__":
         ("EURUSD -> unresolved veto (fiat pair, no CoinGecko match)",
          make_state("EURUSD", {})),
     ]
+
+    # Buzz-sourced trigger — no rsi_14 at all (Rule 6 must be skipped, not
+    # KeyError), same PUMPUSD fundamentals as the speculative case above so
+    # only the signal_source difference is under test.
+    buzz_state = {
+        "ticker": "PUMPUSD",
+        "quant_trigger": {"direction": "BUY_SIGNAL", "price_at_trigger": 69.58},
+        "market_metrics": {},
+        "sentiment": {"sentiment_score": 5, "trap_warning": False,
+                      "trap_reason": None, "confidence": "high"},
+        "fundamentals": {"market_cap": 412_000_000, "total_volume": 6_200_000,
+                         "market_cap_rank": 180},
+        "signal_source": "buzz",
+    }
+    cases.append(("PUMPUSD buzz-sourced -> Rule 6 skipped, no rsi_14 present", buzz_state))
 
     print("[*] Testing risk agent with asset-tier classification...")
     for label, state in cases:
