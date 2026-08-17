@@ -35,12 +35,25 @@ New discovery mechanism in `core/buzz/`, additive alongside the existing scanner
 - A real (non-synthetic) buzz trigger has not yet fired and run through the full pipeline — X/Grok hasn't reported a genuine spike during testing so far.
 - Reddit source activation, pending the Responsible Builder Policy decision.
 
-## PLANNED (after buzz detection) — Leaderboard / copy-trading
+## IN PROGRESS — Leaderboard / copy-trading
 
-- Track known high-performing wallets (likely Solana-focused) and their real-time buy/sell activity via an on-chain indexer API (e.g. Helius, Birdeye).
-- Needs its own dedicated safety layer, distinct from the existing risk agent — specific risk that a copied wallet may be selling into the exact pump being copied.
-- Likely requirements: confirmation delay before copying, a stricter position-size ceiling than even the speculative tier, possibly a "still accumulating" check on the tracked wallet before copying.
-- Scoped as architecturally significant — comparable in scope to the original crypto/stock merge and the asset classifier. Likely warrants Fable for the design phase.
+Track known high-performing Solana wallets and mirror their buy activity, with its own dedicated safety layer distinct from the existing risk agent — specific risk that a copied wallet may be selling into the exact pump being copied. Scoped as architecturally significant, comparable to the original crypto/stock merge and the asset classifier.
+
+**Researched (2026-08-17, checked against live docs, not memory):** Helius vs. Birdeye for real-time Solana wallet tracking without running our own RPC node. Helius: free tier 1M credits/month, 10 req/sec, webhooks included at no charge — `accountAddresses`-based HTTP push webhooks are purpose-built for watching a list of wallets, confirmed via a real captured payload. Birdeye: free tier is materially more limited (1 req/sec, described by Birdeye itself as "Limited" access); has both a historical REST wallet-tx endpoint and a real-time `SUBSCRIBE_WALLET_TXS` WebSocket, but tier-gating/limits on the wallet-specific endpoints aren't documented publicly. Helius is the stronger primary candidate.
+
+**Built and self-tested:**
+- `core/leaderboard/position_accumulator.py` — the "still accumulating" safeguard gate. Per-(wallet, token_mint) ledger of signed raw-token-count buy/sell events over a rolling 24h window; passes only if net position is positive (still net-accumulating this token, not distributing into the pump being copied). Raw token-count weighting only (no USD estimation) — an accepted, explicitly-commented limitation, not an oversight. Cold-start fail-closed is keyed on *wallet tracking duration* (`wallet_tracking_started_at`), not per-token history — a wallet's first-ever buy of a given token is the normal case this feature exists to catch and passes on its own merits; the actual risk is not having observed the wallet long enough yet to trust the window. Both the ledger and tracking-start timestamps persist to `logs/wallet_position_ledger.json`, same restart-safety pattern as buzz's cooldown store.
+
+**Drafted, not yet finalized:**
+- A Helius enhanced-webhook payload parser (`parse_buy_event`) — draft logic exists for turning one `accountData` transaction into a structured buy event (SOL/WSOL/stable spent → non-quote token received, fee-noise-floored, largest-non-quote-delta picked as "bought" token). Field names need verification against a real captured payload before this is trustworthy — a first real payload was captured and confirmed the general shape (`accountData` / `nativeBalanceChange` / `tokenBalanceChanges`), but the draft parser hasn't been checked line-by-line against it yet.
+- A matching state-matrix shape (`signal_source: 'wallet_copy'`, `wallet_metrics` extras block), following the same `build_state_matrix()` convention as buzz detection.
+
+**Known gaps, not yet addressed:**
+- This is an inbound webhook, not a poll loop — needs a real, continuously-running, publicly reachable HTTP receiver, which is new infrastructure this codebase doesn't have (everything else is outbound poll/websocket-subscribe).
+- `crypto_bot/execution.py` is Kraken-only (`exchange.create_order()` against Kraken pairs). Most tokens a Solana whale buys early won't be listed on Kraken at all — even a fully-approved copy-trade currently has nowhere to execute, paper or otherwise.
+- `ticker` in the state matrix is a raw base58 mint address until a mint→symbol/price/fundamentals resolution step exists (Birdeye is the natural source, since CoinGecko won't have fresh meme coins indexed).
+- The accumulator only has buy events to work with so far — a symmetric sell-event parser doesn't exist yet, so net position can currently only go up, not down, until that's built.
+- Position-size ceiling, confirmation delay, and the dedicated safety layer itself (distinct from `core/agents/risk_agent.py`) are still unscoped.
 
 ## DEFERRED / KNOWN GAPS
 
